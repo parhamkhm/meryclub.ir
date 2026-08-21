@@ -33,18 +33,20 @@ const formatPrice = (value) => value.toLocaleString('fa-IR');
             <ul class="menu-items">
               {category.items.map((item) => (
                 <li class="menu-item">
-                  <span class="menu-item-name">
-                    <span lang="fa">{item.fa}</span>
-                    <span class="menu-item-en" lang="en">
-                      {item.en}
+                  <div class="menu-item-row">
+                    <span class="menu-item-name-fa" lang="fa">
+                      {item.fa}
                     </span>
-                  </span>
-                  <span class="menu-item-leader" aria-hidden="true" />
-                  <span class="menu-item-price">
-                    {formatPrice(item.price)}
-                    <span lang="fa" class="menu-item-currency">
-                      {currency}
+                    <span class="menu-item-leader" aria-hidden="true" />
+                    <span class="menu-item-price">
+                      {formatPrice(item.price)}
+                      <span lang="fa" class="menu-item-currency">
+                        {currency}
+                      </span>
                     </span>
+                  </div>
+                  <span class="menu-item-en" lang="en">
+                    {item.en}
                   </span>
                 </li>
               ))}
@@ -95,7 +97,7 @@ const formatPrice = (value) => value.toLocaleString('fa-IR');
 
   .menu-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(19rem, 100%), 1fr));
     gap: var(--space-3);
     align-items: start;
   }
@@ -149,17 +151,21 @@ const formatPrice = (value) => value.toLocaleString('fa-IR');
 
   .menu-item {
     display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .menu-item-row {
+    display: flex;
     align-items: baseline;
     gap: 0.5rem;
   }
 
-  .menu-item-name {
-    display: flex;
-    align-items: baseline;
-    gap: 0.4rem;
-    flex-wrap: wrap;
+  .menu-item-name-fa {
     font-family: var(--font-body-fa);
     font-weight: 500;
+    flex-shrink: 1;
+    min-width: 0;
   }
 
   .menu-item-en {

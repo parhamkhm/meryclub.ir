@@ -4,7 +4,7 @@ import Logo from './Logo.astro';
 const links = [
   { href: '#menu', fa: 'منو', en: 'Menu' },
   { href: '#instagram', fa: 'اینستاگرام', en: 'Instagram' },
-  { href: '#contact', fa: 'موقعیت و تماس', en: 'Visit' },
+  { href: '#contact', fa: 'تماس', en: 'Visit' },
 ];
 ---
 
@@ -73,13 +73,14 @@ const links = [
   }
 
   nav a {
+    display: inline-block;
     text-decoration: none;
     color: color-mix(in srgb, var(--color-cream) 85%, transparent);
     font-family: var(--font-body-fa);
     font-size: 0.92rem;
     font-weight: 500;
     position: relative;
-    padding-block: 0.25rem;
+    padding: 0.55rem 0.3rem;
     transition: color 0.2s var(--ease-out);
   }
 
@@ -113,6 +114,29 @@ const links = [
     }
     .brand-name {
       font-size: 0.95rem;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .bar {
+      padding-block: 0.5rem;
+    }
+    .brand {
+      gap: 0.4rem;
+    }
+    .brand-name {
+      font-size: 0.85rem;
+    }
+    nav ul {
+      gap: 0.5rem;
+    }
+    nav a {
+      font-size: 0.75rem;
+      padding-inline: 0.3rem;
+    }
+    .brand :global(svg) {
+      width: 30px;
+      height: 30px;
     }
   }
 </style>
