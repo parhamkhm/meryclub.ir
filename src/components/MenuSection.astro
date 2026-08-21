@@ -1,0 +1,194 @@
+---
+import { menu, currency } from '../lib/menu';
+
+const formatPrice = (value) => value.toLocaleString('fa-IR');
+---
+
+<section class="menu-section" id="menu">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="heading section-title">
+        <span lang="fa">منوی کافه مری</span>
+        <span class="section-title-en" lang="en">The Menu</span>
+      </h2>
+      <p class="section-note">
+        <span lang="fa"
+          >قیمت‌ها نمایشی هستند و پیش از راه‌اندازی نهایی به‌روزرسانی می‌شوند.</span
+        >
+      </p>
+    </div>
+
+    <div class="menu-grid">
+      {
+        menu.map((category) => (
+          <article class="menu-card">
+            <header class="menu-card-head">
+              <h3 class="heading" lang="fa">
+                {category.fa}
+              </h3>
+              <span class="menu-card-en" lang="en">
+                {category.en}
+              </span>
+            </header>
+            <ul class="menu-items">
+              {category.items.map((item) => (
+                <li class="menu-item">
+                  <span class="menu-item-name">
+                    <span lang="fa">{item.fa}</span>
+                    <span class="menu-item-en" lang="en">
+                      {item.en}
+                    </span>
+                  </span>
+                  <span class="menu-item-leader" aria-hidden="true" />
+                  <span class="menu-item-price">
+                    {formatPrice(item.price)}
+                    <span lang="fa" class="menu-item-currency">
+                      {currency}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .menu-section {
+    padding-block: var(--space-6) var(--space-5);
+    background: var(--color-cream);
+  }
+
+  .section-head {
+    text-align: center;
+    max-width: 40rem;
+    margin-inline: auto;
+    margin-bottom: var(--space-5);
+  }
+
+  .section-title {
+    font-size: clamp(2rem, 4.5vw, 3rem);
+    color: var(--color-navy);
+    margin-block: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .section-title-en {
+    font-family: var(--font-body-en);
+    font-size: 0.85rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--color-gold-deep);
+  }
+
+  .section-note {
+    font-size: 0.9rem;
+    color: color-mix(in srgb, var(--color-ink) 65%, transparent);
+  }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    gap: var(--space-3);
+    align-items: start;
+  }
+
+  .menu-card {
+    background: #fff;
+    border: 1px solid color-mix(in srgb, var(--color-navy) 10%, transparent);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-3);
+    transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+  }
+
+  .menu-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 8px rgba(12, 22, 46, 0.08), 0 20px 36px -16px rgba(12, 22, 46, 0.22);
+  }
+
+  .menu-card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-bottom: 0.6rem;
+    margin-bottom: 0.85rem;
+    border-bottom: 1.5px solid var(--color-gold);
+  }
+
+  .menu-card-head .heading {
+    font-size: 1.3rem;
+    color: var(--color-navy);
+  }
+
+  .menu-card-en {
+    font-family: var(--font-body-en);
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--color-navy) 60%, transparent);
+    white-space: nowrap;
+  }
+
+  .menu-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .menu-item-name {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    font-family: var(--font-body-fa);
+    font-weight: 500;
+  }
+
+  .menu-item-en {
+    font-family: var(--font-body-en);
+    font-size: 0.8125rem;
+    color: color-mix(in srgb, var(--color-ink) 55%, transparent);
+    font-style: italic;
+  }
+
+  .menu-item-leader {
+    flex: 1;
+    border-bottom: 1.5px dotted color-mix(in srgb, var(--color-navy) 25%, transparent);
+    min-width: 0.75rem;
+    transform: translateY(-0.3em);
+  }
+
+  .menu-item-price {
+    font-family: var(--font-body-en);
+    font-weight: 600;
+    color: var(--color-navy);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .menu-item-currency {
+    font-family: var(--font-body-fa);
+    font-weight: 400;
+    font-size: 0.8125rem;
+    color: color-mix(in srgb, var(--color-ink) 55%, transparent);
+    margin-inline-start: 0.2rem;
+  }
+</style>

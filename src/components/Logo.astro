@@ -1,0 +1,43 @@
+---
+interface Props {
+  variant?: 'light' | 'dark';
+  size?: number;
+}
+const { variant = 'light', size = 44 } = Astro.props;
+const ring = variant === 'light' ? 'var(--color-cream)' : 'var(--color-navy)';
+const fill = variant === 'light' ? 'var(--color-navy)' : 'var(--color-cream)';
+---
+
+<span class="logo" style={`--size:${size}px; --ring:${ring}; --fill:${fill}`}>
+  <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true">
+    <circle cx="50" cy="50" r="47" fill="var(--fill)" stroke="var(--ring)" stroke-width="2.5" />
+    <text x="50" y="53" text-anchor="middle" class="logo-m">M</text>
+    <line x1="30" y1="66" x2="70" y2="66" class="logo-rule" />
+    <text x="50" y="78" text-anchor="middle" class="logo-sub">COFFEE CLUB</text>
+  </svg>
+</span>
+
+<style>
+  .logo {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+  .logo-m {
+    font-family: var(--font-display-en);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 34px;
+    fill: var(--ring);
+  }
+  .logo-rule {
+    stroke: var(--ring);
+    stroke-width: 1;
+    opacity: 0.6;
+  }
+  .logo-sub {
+    font-family: var(--font-body-en);
+    font-size: 7px;
+    letter-spacing: 0.15em;
+    fill: var(--ring);
+  }
+</style>

@@ -1,0 +1,130 @@
+---
+import Logo from './Logo.astro';
+---
+
+<footer class="site-footer" id="contact">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <Logo variant="dark" size={48} />
+      <p class="footer-name heading" lang="fa">کافه مری</p>
+      <p class="footer-tagline" lang="fa">وقفه‌ای آرام در روز شما</p>
+    </div>
+
+    <div class="footer-col">
+      <h3 class="footer-heading" lang="fa">آدرس</h3>
+      <p lang="fa">رشت، خیابان آذراندامی، کوچه سینا</p>
+      <p class="footer-en" lang="en">Rasht, Azarandami St. | Sina Alley</p>
+    </div>
+
+    <div class="footer-col">
+      <h3 class="footer-heading" lang="fa">ساعات کاری</h3>
+      <p lang="fa">هر روز هفته، ۶ صبح تا ۱۱ شب</p>
+      <p class="footer-en" lang="en">Daily · 6 AM – 11 PM</p>
+    </div>
+
+    <div class="footer-col">
+      <h3 class="footer-heading" lang="fa">ارتباط با ما</h3>
+      <a class="footer-link" href="https://www.instagram.com/merycoffeeclub" target="_blank" rel="noopener noreferrer">
+        @merycoffeeclub
+      </a>
+      <p class="footer-note" lang="fa">شماره تماس و ایمیل به‌زودی اضافه می‌شود.</p>
+    </div>
+  </div>
+
+  <div class="container footer-bottom">
+    <p lang="fa">© {new Date().getFullYear()} کافه مری — تمامی حقوق محفوظ است.</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: var(--color-cream-deep);
+    color: var(--color-navy);
+    border-top: 1px solid color-mix(in srgb, var(--color-navy) 12%, transparent);
+    padding-block: var(--space-5) var(--space-3);
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.3fr repeat(3, 1fr);
+    gap: var(--space-4);
+  }
+
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .footer-name {
+    font-size: 1.4rem;
+    color: var(--color-navy);
+    margin-top: 0.5rem;
+  }
+
+  .footer-tagline {
+    font-size: 0.9rem;
+    color: color-mix(in srgb, var(--color-navy) 70%, transparent);
+  }
+
+  .footer-heading {
+    font-family: var(--font-body-en);
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--color-navy);
+    margin: 0 0 0.6rem;
+  }
+
+  .footer-col p {
+    margin: 0 0 0.3rem;
+  }
+
+  .footer-en {
+    font-family: var(--font-body-en);
+    font-size: 0.82rem;
+    color: color-mix(in srgb, var(--color-navy) 60%, transparent);
+    font-style: italic;
+  }
+
+  .footer-link {
+    display: inline-block;
+    font-family: var(--font-body-en);
+    font-weight: 600;
+    color: var(--color-navy);
+    text-decoration: none;
+    border-bottom: 1.5px solid var(--color-gold);
+    padding-bottom: 0.1rem;
+    margin-bottom: 0.6rem;
+    transition: color 0.2s var(--ease-out);
+  }
+
+  .footer-link:hover,
+  .footer-link:focus-visible {
+    color: var(--color-gold-deep);
+  }
+
+  .footer-note {
+    font-size: 0.8rem;
+    color: color-mix(in srgb, var(--color-navy) 55%, transparent);
+  }
+
+  .footer-bottom {
+    margin-top: var(--space-4);
+    padding-top: var(--space-2);
+    border-top: 1px solid color-mix(in srgb, var(--color-navy) 12%, transparent);
+    font-size: 0.8rem;
+    text-align: center;
+    color: color-mix(in srgb, var(--color-navy) 60%, transparent);
+  }
+
+  @media (max-width: 800px) {
+    .footer-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .footer-brand {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

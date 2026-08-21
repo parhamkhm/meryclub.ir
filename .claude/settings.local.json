@@ -4,7 +4,8 @@
       "PowerShell(node --version)",
       "PowerShell(winget --version)",
       "PowerShell(winget install -e --id OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "PowerShell(Test-NetConnection www.instagram.com -Port 443)"
     ]
   },
   "hooks": {
@@ -33,6 +34,5 @@
         ]
       }
     ]
-  },
-  "description": "Impeccable design detector: immediate-tier checks after Edit/Write/MultiEdit on UI files, full-rule deep pass on Stop."
+  }
 }
