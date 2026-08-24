@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>پیش‌نمایش منو | کافه مری</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+  /* demo-only additions kept separate from the design system */
+  .demo-banner{position:sticky;top:0;z-index:50;background:var(--color-navy-950);border-bottom:1px solid color-mix(in srgb, var(--color-amber) 30%, transparent);}
+  .tab-btn{white-space:nowrap;}
+  .tab-btn[aria-selected="true"]{background:var(--color-amber);color:var(--color-navy-900);}
+  .tab-btn[aria-selected="false"]{background:transparent;color:var(--color-navy-900);border:1px solid color-mix(in srgb, var(--color-navy-700) 25%, transparent);}
+  .item-card{background:var(--color-bone-50);border:1px solid var(--color-bone-300);}
+  .cat-icon{color:var(--color-oak-ink);}
+</style>
+</head>
+<body class="bg-bone text-navy-900" style="overflow-x:hidden;">
+
+<div class="demo-banner text-bone">
+  <div class="shell flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+    <p class="flex items-center gap-2">
+      <span class="inline-flex size-2 rounded-full bg-amber"></span>
+      <strong>پیش‌نمایش طراحی</strong> — این صفحه روی سایت اصلی نیست، فقط برای بررسی شماست.
+    </p>
+    <a href="index.html#menu" class="text-amber underline underline-offset-4 decoration-amber/40 hover:decoration-amber">بازگشت به سایت اصلی ↩</a>
+  </div>
+</div>
+
+<header class="shell pt-14 pb-4 text-center">
+  <p class="eyebrow text-oak-ink!">منوی کامل — نسخهٔ پیشنهادی</p>
+  <h1 class="mt-4 font-display text-[clamp(2rem,5.5vw,3.25rem)] text-navy-700">هر دسته، یک تب</h1>
+  <p class="mt-4 max-w-xl mx-auto text-navy-900/70">
+    به‌جای اسکرول طولانی، هر دسته را جدا انتخاب می‌کنید. آیکون‌ها جای‌گزین موقتِ عکس هستند —
+    عکس‌های واقعی وقتی آماده شوند جایگزین می‌شوند.
+  </p>
+</header>
+
+<main class="shell pb-24">
+
+  <!-- category tabs -->
+  <div class="sticky top-[52px] z-30 -mx-[var(--shell)] mt-8 bg-bone/95 py-3 backdrop-blur">
+    <div class="px-[var(--shell)]">
+      <div id="tabs" role="tablist" aria-label="دسته‌بندی منو" class="hide-scrollbar flex gap-2 overflow-x-auto pb-1"></div>
+    </div>
+  </div>
+
+  <p class="mt-6 flex items-center justify-center gap-2 text-center text-sm text-oak-ink">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-4 shrink-0">
+      <circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span>قیمت‌ها به‌زودی در همین صفحه به‌روزرسانی می‌شوند.</span>
+  </p>
+
+  <!-- active category panel -->
+  <section id="panel" class="mt-10"></section>
+
+</main>
+
+<script src="assets/js/menu-data.js"></script>
+<script>
+(function () {
+  var ICONS = {
+    "warm-coffee": '<path d="M5 9h12v6a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V9Z"/><path d="M17 10.5h1a2 2 0 1 1 0 4h-1"/><path d="M9 3.2c0 .9-1 .9-1 1.8s1 .9 1 1.8M13 3.2c0 .9-1 .9-1 1.8s1 .9 1 1.8" stroke-linecap="round"/>',
+    "iced-coffee": '<path d="M6.2 8h11.6l-1.15 10.8a2 2 0 0 1-2 1.8H9.35a2 2 0 0 1-2-1.8L6.2 8Z"/><path d="M14.5 3.3 16 8" stroke-linecap="round"/><rect x="9.3" y="11" width="3" height="3" rx=".5"/>',
+    "smoothies": '<path d="M8.2 4h7.6l-1.15 14.7a1.8 1.8 0 0 1-1.8 1.6h-1.7a1.8 1.8 0 0 1-1.8-1.6L8.2 4Z"/><path d="M8 4h8"/><path d="M12.5 1.3 14.5 4" stroke-linecap="round"/><circle cx="12" cy="9" r="1.6"/>',
+    "mocktails": '<path d="M4.5 4.2h15L12.6 12v6.8"/><path d="M9.2 19.4h5.6" stroke-linecap="round"/><path d="M10.6 5.6c1-1.2 2.6-1.2 3 0" stroke-linecap="round"/>',
+    "matcha-bar": '<path d="M4.2 10h15.6a7.9 7.9 0 0 1-7.8 9 7.9 7.9 0 0 1-7.8-9Z"/><path d="M9.3 10c0-3 1-4.9 2.9-6.4M12.4 10c0-3.3 1.1-5.2 2.9-6.9" stroke-linecap="round"/>',
+    "milkshakes": '<path d="M6.6 9.2h10.8l-1.3 9.8a2 2 0 0 1-2 1.75H9.9a2 2 0 0 1-2-1.75L6.6 9.2Z"/><path d="M5.7 9.2c0-1.9 2.8-3.1 6.3-3.1s6.3 1.2 6.3 3.1"/><path d="M13 2.2l1.1 3.9" stroke-linecap="round"/>',
+    "hot-drinks": '<path d="M3.3 11h11.9a4.6 4.6 0 0 1 4.6 4.6.9.9 0 0 1-.9.9h-1.1"/><path d="M3.3 11v2.6A5.4 5.4 0 0 0 8.7 19h2.6a5.4 5.4 0 0 0 5.4-5.4V11"/><path d="M8 7.8c0 .8-.9.8-.9 1.6s.9.8.9 1.6M11.4 7.8c0 .8-.9.8-.9 1.6s.9.8.9 1.6" stroke-linecap="round"/>',
+    "iced-tea": '<path d="M7.3 4h9.4l-1.05 14.85A2 2 0 0 1 13.66 20.7h-3.3a2 2 0 0 1-2-1.85L7.3 4Z"/><path d="M15.3 1.3 16.7 4" stroke-linecap="round"/><path d="M8.5 10h7M8.85 14.3h6.3" stroke-linecap="round"/>',
+    "dessert": '<path d="M4 19h16" stroke-linecap="round"/><path d="M4.3 19 12 5.2l7.7 13.8"/><path d="M12 5.2v4.3M8.6 19v-6.2M15.4 19v-6.2" stroke-linecap="round"/>',
+    "breakfast": '<path d="M3.3 15.2c.7-6.1 4.6-10.4 8.9-10.4 2.6 0 4.6 1.6 4.6 3.6 0 1.7-1.5 2.2-3.6 1.5-2.4-.8-4.9-.6-6 1.3-1.1 1.9-.2 4 1.7 5.3-1 1.2-2.2 1.8-3.4 1.8-1.9 0-2.5-1.6-2.2-3.1Z"/>'
+  };
+  var FALLBACK_ICON = '<circle cx="12" cy="12" r="8"/>';
+
+  var tabs = document.getElementById("tabs");
+  var panel = document.getElementById("panel");
+  var active = MERY_MENU[0].id;
+
+  function renderTabs() {
+    tabs.innerHTML = MERY_MENU.map(function (cat) {
+      var sel = cat.id === active;
+      return '<button type="button" role="tab" aria-selected="' + sel + '" data-cat="' + cat.id + '" ' +
+             'class="tab-btn inline-flex shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-colors cursor-pointer">' +
+             '<span>' + cat.name.fa + '</span>' +
+             '<span class="text-xs opacity-60">' + cat.items.length + '</span>' +
+             '</button>';
+    }).join("");
+    Array.prototype.forEach.call(tabs.querySelectorAll("[data-cat]"), function (btn) {
+      btn.addEventListener("click", function () {
+        active = btn.getAttribute("data-cat");
+        renderTabs();
+        renderPanel();
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  }
+
+  function renderPanel() {
+    var cat = MERY_MENU.find(function (c) { return c.id === active; });
+    var icon = ICONS[cat.id] || FALLBACK_ICON;
+
+    var itemsHtml = cat.items.map(function (item) {
+      var star = item.signature
+        ? '<span class="inline-flex items-center gap-1 rounded-full bg-amber/20 px-2.5 py-1 text-[.7rem] font-medium text-oak-ink">' +
+          '<svg viewBox="0 0 24 24" fill="currentColor" class="size-3"><path d="M12 2l2.6 6.6L21 9.3l-5 4.4L17.5 21 12 17.3 6.5 21 8 13.7l-5-4.4 6.4-.7L12 2Z"/></svg>ویژهٔ مری</span>'
+        : '';
+      return '<li class="item-card reveal is-in flex items-center justify-between gap-4 rounded-xl px-5 py-4">' +
+             '<div>' +
+               '<p class="text-lg text-navy-900">' + item.fa + '</p>' +
+               '<p class="mt-0.5 text-xs uppercase tracking-wide text-navy-900/45">' + item.en + '</p>' +
+             '</div>' +
+             '<div class="flex items-center gap-3">' + star +
+               '<span class="text-sm text-navy-900/40">—</span>' +
+             '</div>' +
+           '</li>';
+    }).join("");
+
+    panel.innerHTML =
+      '<div class="reveal is-in mb-8 flex flex-col items-center gap-4 text-center">' +
+        '<span class="cat-icon inline-flex size-16 items-center justify-center rounded-full bg-oak/12">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" class="size-8">' + icon + '</svg>' +
+        '</span>' +
+        '<div>' +
+          '<h2 class="font-display text-2xl text-navy-700">' + cat.name.fa + '</h2>' +
+          '<p class="text-sm uppercase tracking-[0.2em] text-navy-900/40">' + cat.name.en + '</p>' +
+        '</div>' +
+      '</div>' +
+      '<ul class="grid gap-3 sm:grid-cols-2">' + itemsHtml + '</ul>';
+  }
+
+  renderTabs();
+  renderPanel();
+})();
+</script>
+</body>
+</html>

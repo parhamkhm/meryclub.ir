@@ -1,17 +1,14 @@
 {
-  "name": "radiant-resonance",
-  "type": "module",
-  "version": "0.0.1",
-  "engines": {
-    "node": ">=22.12.0"
-  },
+  "name": "meryclub-ir",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mery Coffee Club — static site",
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+    "build": "tailwindcss -i ./assets/css/tailwind-input.css -o ./assets/css/styles.css --minify",
+    "watch": "tailwindcss -i ./assets/css/tailwind-input.css -o ./assets/css/styles.css --watch"
   },
-  "dependencies": {
-    "astro": "^7.2.4"
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.11",
+    "tailwindcss": "^4.1.11"
   }
 }

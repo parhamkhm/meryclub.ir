@@ -1,0 +1,188 @@
+@import "tailwindcss";
+@import "./fonts.css";
+
+/* ==========================================================================
+   MERY COFFEE CLUB — DESIGN TOKENS
+   Palette sampled directly from the printed menu (ink + paper) and the
+   café interior (navy walls, oak floor, warm counter lighting).
+   ========================================================================== */
+@theme {
+  /* Navy — from the interior walls and the menu ink */
+  --color-navy-950: #070D17;
+  --color-navy-900: #0C1523;
+  --color-navy-850: #101B2B;
+  --color-navy-800: #13223A;
+  --color-navy-700: #16304F;   /* brand primary: the menu wordmark ink */
+  --color-navy-600: #1F3E63;
+  --color-navy-500: #2C5382;
+  --color-navy-400: #4A74A0;
+
+  /* Bone — the menu paper stock */
+  --color-bone-50:  #F7F6F4;
+  --color-bone:     #F0EFED;
+  --color-bone-200: #E4E2DD;
+  --color-bone-300: #D0CDC5;
+  --color-bone-400: #A8A49A;
+
+  /* Oak + amber — the floor and the warm counter light */
+  --color-oak:        #A48460;
+  --color-oak-light:  #C2A684;
+  --color-amber:      #DCC5A1;
+  --color-amber-soft: #EBD9BC;
+  /* Same hue family, darkened so oak-coloured TEXT clears 4.5:1 on bone.
+     Use --color-oak for fills/borders, --color-oak-ink for type. */
+  --color-oak-ink:    #6F5637;
+
+  /* Type. Latin glyphs resolve to Cormorant/Jost, Persian glyphs fall
+     through to Vazirmatn automatically via unicode-range. */
+  --font-display: 'Cormorant Garamond', 'Vazirmatn', Georgia, 'Times New Roman', serif;
+  --font-sans:    'Jost', 'Vazirmatn', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+@layer base {
+  :root {
+    --header-h: 4.5rem;
+    --shell: clamp(1.25rem, 5vw, 5rem);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--header-h) + 4.5rem);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    background-color: var(--color-navy-900);
+    color: var(--color-bone);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Persian sits a little larger and looser than Latin at the same px size */
+  html[lang="fa"] body { line-height: 1.9; }
+  html[lang="fa"] { font-size: 1.02rem; }
+
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 500; line-height: 1.1; }
+  html[lang="fa"] h1,
+  html[lang="fa"] h2,
+  html[lang="fa"] h3 { line-height: 1.45; font-weight: 600; }
+
+  :focus-visible {
+    outline: 2px solid var(--color-amber);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ::selection { background: var(--color-amber); color: var(--color-navy-900); }
+
+  /* Numerals in tables/price columns must not jitter */
+  .tnum { font-variant-numeric: tabular-nums; }
+}
+
+/* ==========================================================================
+   COMPONENTS
+   ========================================================================== */
+@layer components {
+  .shell { padding-inline: var(--shell); margin-inline: auto; max-width: 90rem; }
+
+  .eyebrow {
+    font-size: 0.6875rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--color-amber);
+    font-weight: 500;
+  }
+  html[lang="fa"] .eyebrow { letter-spacing: 0.12em; font-size: 0.8125rem; }
+
+  .rule-label {
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .rule-label::before,
+  .rule-label::after {
+    content: ""; height: 1px; flex: 1;
+    background: color-mix(in srgb, var(--color-bone) 22%, transparent);
+  }
+
+  /* Buttons ---------------------------------------------------------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 0.625rem;
+    min-height: 3rem;               /* >= 44px touch target */
+    padding-inline: 1.75rem;
+    border-radius: 999px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color .22s var(--ease-out-soft),
+                color .22s var(--ease-out-soft),
+                border-color .22s var(--ease-out-soft),
+                box-shadow .22s var(--ease-out-soft);
+  }
+  .btn-primary {
+    background: var(--color-amber);
+    color: var(--color-navy-900);
+    box-shadow: 0 1px 0 color-mix(in srgb, #fff 35%, transparent) inset;
+  }
+  .btn-primary:hover { background: var(--color-amber-soft); }
+  .btn-outline {
+    border: 1px solid color-mix(in srgb, var(--color-bone) 34%, transparent);
+    color: var(--color-bone);
+  }
+  .btn-outline:hover {
+    border-color: var(--color-amber);
+    color: var(--color-amber);
+    background: color-mix(in srgb, var(--color-amber) 8%, transparent);
+  }
+  .btn-ink {
+    background: var(--color-navy-700);
+    color: var(--color-bone);
+  }
+  .btn-ink:hover { background: var(--color-navy-600); }
+
+  /* Scroll reveal ----------------------------------------------------- */
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity .7s var(--ease-out-soft), transform .7s var(--ease-out-soft);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  .reveal.is-in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; }
+  }
+}
+
+@layer components {
+  /* The second-language item name carries its own `dir` so it renders with
+     correct bidi, but it must still sit flush with the primary name, which
+     follows the PAGE direction — not the span's own. */
+  html[dir="rtl"] .alt-name { text-align: right; }
+  html[dir="ltr"] .alt-name { text-align: left; }
+}
+
+@layer utilities {
+  .hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+
+  /* Flip a glyph that has an inherent direction (arrows, chevrons) */
+  [dir="rtl"] .flip-rtl { transform: scaleX(-1); }
+}

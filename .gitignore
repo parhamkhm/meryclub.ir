@@ -1,27 +1,30 @@
-# build output
-dist/
-# generated types
-.astro/
-
-# dependencies
+# Dependencies
 node_modules/
+server/node_modules/
 
-# logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+# Backend runtime data & secrets — never commit these
+server/data/
+server/config.json
 
+# Build tooling / local dev
+.claude/
 
-# environment variables
-.env
-.env.production
+# Personal working files, not part of the deployed site
+admin login.txt
+notes.txt
+need to be fixed/
+menuphotoprompts.md
 
-# macOS-specific files
+# Raw reference/source material (not served, large binaries)
+ai generated pics/
+pics/
+inspration/
+menu+.jpg
+mery-coffee-menu-photos/
+
+# OS/editor cruft
 .DS_Store
+Thumbs.db
 
-# jetbrains setting folder
-.idea/
-
-# impeccable working files (review screenshots, mocks) — not source
-.impeccable/
+# Contains a GitHub token in plaintext — never commit
+meryclub.ir github repo.txt

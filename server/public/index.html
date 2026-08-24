@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>پنل مدیریت — باشگاه مشتریان مری</title>
+<style>
+  :root{
+    --navy:#0C1523; --navy-2:#16304F; --bone:#F0EFED; --bone-2:#F7F6F4;
+    --amber:#DCC5A1; --oak-ink:#6F5637; --border:#D0CDC5; --danger:#B3432E; --ok:#3E7A4C;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Vazirmatn',Tahoma,sans-serif;background:var(--bone-2);color:var(--navy);}
+  header{background:var(--navy);color:var(--bone);padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;}
+  header h1{font-size:1.05rem;margin:0;font-weight:600;}
+  main{max-width:960px;margin:0 auto;padding:1.5rem;}
+  .card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem;}
+  label{display:block;font-size:.85rem;font-weight:600;margin-bottom:.35rem;}
+  input{width:100%;padding:.65rem .8rem;border:1px solid var(--border);border-radius:8px;font-size:1rem;font-family:inherit;}
+  input:focus{outline:2px solid var(--amber);outline-offset:1px;border-color:var(--amber);}
+  button{cursor:pointer;border:none;border-radius:999px;padding:.65rem 1.4rem;font-size:.9rem;font-weight:600;font-family:inherit;}
+  .btn-primary{background:var(--amber);color:var(--navy);}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-outline{background:transparent;border:1px solid var(--border);color:var(--navy);}
+  .btn-danger-outline{background:transparent;border:1px solid var(--danger);color:var(--danger);padding:.4rem .9rem;font-size:.8rem;}
+  .field{margin-bottom:1rem;}
+  .error{color:var(--danger);font-size:.85rem;margin-top:.5rem;}
+  .success{color:var(--ok);font-size:.85rem;margin-top:.5rem;}
+  table{width:100%;border-collapse:collapse;font-size:.9rem;}
+  th,td{text-align:right;padding:.6rem .5rem;border-bottom:1px solid var(--border);}
+  th{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;}
+  .badge{display:inline-block;padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;}
+  .badge-active{background:#e8f3ea;color:var(--ok);}
+  .badge-redeemed{background:#eee;color:#777;}
+  .badge-expired{background:#fbeaea;color:var(--danger);}
+  .hidden{display:none !important;}
+  .muted{color:#7a7a7a;font-size:.85rem;}
+  .row{display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end;}
+  .row > *{flex:1;min-width:160px;}
+  .top-actions{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.75rem;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>باشگاه مشتریان مری — پنل مدیریت</h1>
+  <button id="logoutBtn" class="btn-outline hidden" style="background:transparent;color:var(--bone);border-color:rgba(240,239,237,.35)">خروج</button>
+</header>
+
+<main>
+
+  <!-- LOGIN -->
+  <section id="loginView" class="card" style="max-width:360px;margin-inline:auto;">
+    <h2 style="margin-top:0;">ورود</h2>
+    <form id="loginForm">
+      <div class="field">
+        <label for="username">نام کاربری</label>
+        <input id="username" name="username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="password">رمز عبور</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%;">ورود</button>
+      <p id="loginError" class="error hidden" role="alert"></p>
+    </form>
+  </section>
+
+  <!-- DASHBOARD -->
+  <div id="dashView" class="hidden">
+
+    <section class="card">
+      <h2 style="margin-top:0;">تنظیمات جایزهٔ خوش‌آمدگویی</h2>
+      <p class="muted">این مقادیر بلافاصله روی عضویت‌های جدید اثر می‌گذارد؛ عضویت‌های قبلی تغییر نمی‌کنند.</p>
+      <form id="settingsForm">
+        <div class="row">
+          <div class="field">
+            <label for="rewardDesc">توضیح جایزه</label>
+            <input id="rewardDesc" required>
+          </div>
+          <div class="field" style="max-width:160px;">
+            <label for="rewardDays">اعتبار (روز)</label>
+            <input id="rewardDays" type="number" min="1" max="365" required>
+          </div>
+          <button type="submit" class="btn-primary">ذخیره</button>
+        </div>
+        <p id="settingsMsg" class="hidden"></p>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="top-actions">
+        <h2 style="margin:0;">اعضا</h2>
+        <input id="searchBox" placeholder="جستجو با نام یا شماره…" style="max-width:220px;">
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>نام</th><th>شماره</th><th>تاریخ عضویت</th><th>جایزه</th><th></th></tr>
+          </thead>
+          <tbody id="membersBody"></tbody>
+        </table>
+      </div>
+      <p id="membersEmpty" class="muted hidden">هنوز عضوی ثبت نشده است.</p>
+    </section>
+
+  </div>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
