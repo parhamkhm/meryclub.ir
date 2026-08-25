@@ -8,6 +8,7 @@
 
    To hide an item temporarily:   add   hidden: true
    To mark an item as a favourite: add   signature: true
+   To highlight with the amber "پیشنهاد مری" pill: add   promo: true
    To add a short description:     add   note: { fa: "...", en: "..." }
 
    After editing, just save the file and refresh the page.
@@ -70,6 +71,8 @@ const MERY_MENU = [
       { en: "Blue Lagoon",         fa: "بلو لاگون",        price: null, img: "mocktail-blue-lagoon" },
       { en: "Strawberry Spark",    fa: "استرابری اسپارک",  price: null },
       { en: "Mery Berry",          fa: "مری بری",          price: null, signature: true, img: "mocktail-mery-berry" },
+      { en: "Mery Yoohoo",         fa: "مری یوهویی",       price: null },
+      { en: "Custom Drink",        fa: "نوشیدنی دلخواه",   price: null },
     ],
   },
   {
@@ -143,6 +146,16 @@ const MERY_MENU = [
       { en: "Toast",     fa: "تست",     price: null },
       { en: "Croissant", fa: "کروسان",  price: null, img: "breakfast-croissant" },
       { en: "Oatmeal",   fa: "اوتمیل",  price: null },
+    ],
+  },
+  {
+    id: "gile-bar",
+    name: { en: "Gile Bar", fa: "گیله‌بار" },
+    items: [
+      { en: "Dollar Limoo",   fa: "دلار لیمو",    price: null },
+      { en: "Naranj Nana",    fa: "نارنج نعنا",   price: null },
+      { en: "Abghoore Dollar",fa: "آبعوره دلار",  price: null },
+      { en: "Gile Mix",       fa: "گیله میکس",    price: null, promo: true },
     ],
   },
 ];

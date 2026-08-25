@@ -180,6 +180,14 @@
       body.appendChild(star);
     }
 
+    if (item.promo) {
+      var promo = document.createElement("span");
+      promo.className =
+        "mt-1 inline-flex items-center rounded-full bg-amber-soft px-2.5 py-0.5 text-[0.6875rem] font-semibold text-navy-900";
+      promo.textContent = t.menu.signature;
+      body.appendChild(promo);
+    }
+
     var alt = document.createElement("p");
     alt.className = "alt-name mt-0.5 text-xs text-navy-900/50";
     alt.setAttribute("lang", lang === "fa" ? "en" : "fa");
@@ -354,7 +362,6 @@
     grid.textContent = "";
 
     MERY_GALLERY.forEach(function (item, index) {
-      var caption = item.caption[lang] || item.caption.en;
       var alt = item.alt[lang] || item.alt.en;
 
       /* --- story bubble --- */
@@ -382,12 +389,7 @@
       );
       rings.appendChild(inner);
 
-      var label = document.createElement("span");
-      label.className = "line-clamp-2 text-xs leading-snug text-bone/70 group-hover:text-amber transition-colors";
-      label.textContent = caption;
-
       btn.appendChild(rings);
-      btn.appendChild(label);
       li.appendChild(btn);
       ring.appendChild(li);
 
@@ -413,17 +415,6 @@
           640, 640
         )
       );
-
-      var veil = document.createElement("span");
-      veil.className =
-        "pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-navy-950/85 " +
-        "to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100 " +
-        "group-focus-visible:opacity-100";
-      var vtext = document.createElement("span");
-      vtext.className = "text-start text-xs text-bone";
-      vtext.textContent = caption;
-      veil.appendChild(vtext);
-      pbtn.appendChild(veil);
 
       pli.appendChild(pbtn);
       grid.appendChild(pli);

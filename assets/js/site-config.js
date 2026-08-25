@@ -12,7 +12,7 @@ const MERY_CONFIG = {
 
   // Google Maps link for the "Get directions" button.
   // Replace with your exact pin: open Google Maps → Share → Copy link.
-  mapsUrl: "https://www.google.com/maps/search/?api=1&query=Mery+Coffee+Club+Rasht",
+  mapsUrl: "https://maps.app.goo.gl/y1P37X4c4eTvw8RN9",
 
   address: {
     fa: "رشت، خیابان آذر اندامی، کوچهٔ سینا",
