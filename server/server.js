@@ -220,6 +220,13 @@ function getTop8Ids() {
   return JSON.parse(cached.review_ids);
 }
 
+// Approving, rejecting, or deleting a review changes the approved pool, so the
+// cached top-8 (otherwise stale for up to TOP8_TTL_MS) needs to reflect it on
+// the next homepage load rather than waiting out the full cache window.
+function invalidateTop8Cache() {
+  db.prepare("DELETE FROM homepage_top8 WHERE id = 1").run();
+}
+
 app.get("/api/reviews/top8", (req, res) => {
   const ids = getTop8Ids();
   if (ids.length === 0) return res.json({ ok: true, reviews: [] });
@@ -400,6 +407,7 @@ app.post("/api/admin/reviews/:id/approve", requireAdmin, requireSameOrigin, (req
   const review = db.prepare("SELECT id FROM reviews WHERE id = ?").get(id);
   if (!review) return res.status(404).json({ ok: false, error: "یافت نشد." });
   db.prepare("UPDATE reviews SET status = 'approved', approved_at = datetime('now') WHERE id = ?").run(id);
+  invalidateTop8Cache();
   res.json({ ok: true });
 });
 
@@ -408,6 +416,24 @@ app.post("/api/admin/reviews/:id/reject", requireAdmin, requireSameOrigin, (req,
   const review = db.prepare("SELECT id FROM reviews WHERE id = ?").get(id);
   if (!review) return res.status(404).json({ ok: false, error: "یافت نشد." });
   db.prepare("UPDATE reviews SET status = 'rejected' WHERE id = ?").run(id);
+  invalidateTop8Cache();
+  res.json({ ok: true });
+});
+
+app.post("/api/admin/reviews/:id/delete", requireAdmin, requireSameOrigin, (req, res) => {
+  const id = Number(req.params.id);
+  const review = db.prepare("SELECT id FROM reviews WHERE id = ?").get(id);
+  if (!review) return res.status(404).json({ ok: false, error: "یافت نشد." });
+  db.exec("BEGIN");
+  try {
+    db.prepare("DELETE FROM reactions WHERE review_id = ?").run(id);
+    db.prepare("DELETE FROM reviews WHERE id = ?").run(id);
+    db.exec("COMMIT");
+  } catch (err) {
+    db.exec("ROLLBACK");
+    throw err;
+  }
+  invalidateTop8Cache();
   res.json({ ok: true });
 });
 

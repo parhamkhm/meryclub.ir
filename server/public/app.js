@@ -171,12 +171,13 @@
       empty.classList.toggle("hidden", reviews.length > 0);
 
       list.innerHTML = reviews.map(function (r) {
-        var actions = reviewStatus === "pending"
-          ? '<div class="actions">' +
-              '<button class="btn-ok" data-approve="' + r.id + '">تأیید</button>' +
-              '<button class="btn-reject" data-reject="' + r.id + '">رد</button>' +
-            "</div>"
+        var pendingActions = reviewStatus === "pending"
+          ? '<button class="btn-ok" data-approve="' + r.id + '">تأیید</button>' +
+            '<button class="btn-reject" data-reject="' + r.id + '">رد</button>'
           : "";
+        var actions = '<div class="actions">' + pendingActions +
+          '<button class="btn-delete" data-delete="' + r.id + '">حذف</button>' +
+          "</div>";
         return '<div class="review-card">' +
           '<div class="meta">' +
             "<strong>" + escapeHtml(r.display_name) + "</strong>" +
@@ -201,6 +202,14 @@
         btn.addEventListener("click", function () {
           btn.disabled = true;
           api("/api/admin/reviews/" + btn.getAttribute("data-reject") + "/reject", { method: "POST" })
+            .then(function () { loadReviews(); });
+        });
+      });
+      Array.prototype.forEach.call(list.querySelectorAll("[data-delete]"), function (btn) {
+        btn.addEventListener("click", function () {
+          if (!window.confirm("این نظر برای همیشه حذف می‌شود. ادامه می‌دهید؟")) return;
+          btn.disabled = true;
+          api("/api/admin/reviews/" + btn.getAttribute("data-delete") + "/delete", { method: "POST" })
             .then(function () { loadReviews(); });
         });
       });
