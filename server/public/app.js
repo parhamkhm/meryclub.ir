@@ -18,6 +18,7 @@
     logoutBtn.classList.remove("hidden");
     loadSettings();
     loadMembers();
+    loadReviews();
   }
   function showLogin() {
     dashView.classList.add("hidden");
@@ -127,6 +128,89 @@
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  // ---- tabs ----
+  var tabBtns = Array.prototype.slice.call(document.querySelectorAll(".tab-btn"));
+  var membersView = document.getElementById("membersView");
+  var reviewsView = document.getElementById("reviewsView");
+
+  tabBtns.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      tabBtns.forEach(function (b) { b.classList.toggle("active", b === btn); });
+      var tab = btn.getAttribute("data-tab");
+      membersView.classList.toggle("hidden", tab !== "members");
+      reviewsView.classList.toggle("hidden", tab !== "reviews");
+    });
+  });
+
+  // ---- reviews ----
+  var reviewStatus = "pending";
+  var subtabBtns = Array.prototype.slice.call(document.querySelectorAll(".subtab-btn"));
+
+  subtabBtns.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      subtabBtns.forEach(function (b) { b.classList.toggle("active", b === btn); });
+      reviewStatus = btn.getAttribute("data-status");
+      loadReviews();
+    });
+  });
+
+  function formatDate(s) {
+    if (!s) return "";
+    return String(s).slice(0, 10);
+  }
+
+  function loadReviews() {
+    api("/api/admin/reviews?status=" + encodeURIComponent(reviewStatus)).then(function (res) {
+      if (!res.data.ok) return;
+      var list = document.getElementById("reviewsList");
+      var empty = document.getElementById("reviewsEmpty");
+      var reviews = res.data.reviews;
+      empty.classList.toggle("hidden", reviews.length > 0);
+
+      list.innerHTML = reviews.map(function (r) {
+        var actions = reviewStatus === "pending"
+          ? '<div class="actions">' +
+              '<button class="btn-ok" data-approve="' + r.id + '">تأیید</button>' +
+              '<button class="btn-reject" data-reject="' + r.id + '">رد</button>' +
+            "</div>"
+          : "";
+        return '<div class="review-card">' +
+          '<div class="meta">' +
+            "<strong>" + escapeHtml(r.display_name) + "</strong>" +
+            '<span dir="ltr">' + escapeHtml(r.phone) + "</span>" +
+            "<span>" + formatDate(r.created_at) + "</span>" +
+            (r.item_tag ? "<span>" + escapeHtml(r.item_tag) + "</span>" : "") +
+            "<span>♥ " + r.reaction_count + "</span>" +
+          "</div>" +
+          '<p class="body-text">' + escapeHtml(r.body) + "</p>" +
+          actions +
+        "</div>";
+      }).join("");
+
+      Array.prototype.forEach.call(list.querySelectorAll("[data-approve]"), function (btn) {
+        btn.addEventListener("click", function () {
+          btn.disabled = true;
+          api("/api/admin/reviews/" + btn.getAttribute("data-approve") + "/approve", { method: "POST" })
+            .then(function () { loadReviews(); });
+        });
+      });
+      Array.prototype.forEach.call(list.querySelectorAll("[data-reject]"), function (btn) {
+        btn.addEventListener("click", function () {
+          btn.disabled = true;
+          api("/api/admin/reviews/" + btn.getAttribute("data-reject") + "/reject", { method: "POST" })
+            .then(function () { loadReviews(); });
+        });
+      });
+    });
+
+    // pending-count badge always reflects pending, regardless of which subtab is open
+    api("/api/admin/reviews?status=pending").then(function (res) {
+      if (!res.data.ok) return;
+      var n = res.data.reviews.length;
+      document.getElementById("pendingCount").textContent = n > 0 ? "(" + n + ")" : "";
     });
   }
 })();

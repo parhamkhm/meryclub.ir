@@ -18,7 +18,7 @@
 
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/vazirmatn-arabic-500-normal.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/cormorant-latin-500-normal.woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/styles.css?v=6">
+<link rel="stylesheet" href="assets/css/styles.css?v=7">
 </head>
 
 <body class="bg-navy-900 text-bone antialiased">
@@ -284,6 +284,42 @@
   </div>
 </section>
 
+<!-- ═══════════════════════════ REVIEWS & SUGGESTIONS ═══════════════════════ -->
+<section id="reviews" class="bg-bone-50 py-24 text-navy-900 sm:py-32">
+  <div class="shell">
+    <header class="mx-auto max-w-2xl text-center">
+      <p class="eyebrow reveal text-oak-ink!" data-i18n="reviews.eyebrow">صدای مشتری‌های مری</p>
+      <h2 class="reveal mt-4 text-[clamp(2.25rem,5.5vw,3.75rem)] text-navy-700" data-i18n="reviews.title">نظرات و پیشنهادات</h2>
+      <p class="reveal mt-5 text-navy-900/70" data-i18n="reviews.subtitle">
+        این نظرات را اعضای باشگاه مشتریان مری نوشته‌اند. پرطرفدارترین‌ها — بر اساس بیشترین ری‌اکشن — همین‌جا نمایش داده می‌شن و ترتیبشون هر ۱۲ ساعت به‌روز می‌شه.
+      </p>
+    </header>
+
+    <div class="reveal mx-auto mt-14 max-w-2xl" style="--reveal-delay:80ms">
+      <div class="reviews-stage" id="reviewsStage">
+        <p id="reviewsStatus" class="rounded-2xl border border-navy-900/10 bg-bone px-6 py-16 text-center text-navy-900/60" data-i18n="reviews.loading">
+          در حال بارگذاری نظرات…
+        </p>
+      </div>
+
+      <div class="reviews-nav-row" id="reviewsNav" hidden>
+        <button type="button" class="reviews-arrow" id="reviewsPrev" data-i18n-aria="reviews.prevAria" aria-label="نظر قبلی">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="reviews-dots" id="reviewsDots"></div>
+        <button type="button" class="reviews-arrow" id="reviewsNext" data-i18n-aria="reviews.nextAria" aria-label="نظر بعدی">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div class="mt-9 flex flex-wrap items-center justify-center gap-4">
+        <button type="button" id="reviewOpenModal" class="btn btn-primary" data-i18n="reviews.submitCta">+ ثبت نظر</button>
+        <a href="/comments" class="btn btn-outline border-navy-900/25! text-navy-900! hover:border-oak! hover:text-oak!" data-i18n="reviews.viewAllCta">مشاهده‌ی همه‌ی نظرات</a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ═══════════════════════════════ INSTAGRAM ══════════════════════════════ -->
 <section id="instagram" class="bg-navy-950 py-24 sm:py-32">
   <div class="shell">
@@ -421,10 +457,100 @@
   <p id="viewerStatus" class="sr-only" role="status" aria-live="polite"></p>
 </div>
 
-<script src="assets/js/site-config.js?v=6"></script>
-<script src="assets/js/i18n.js?v=6"></script>
-<script src="assets/js/menu-data.js?v=6"></script>
-<script src="assets/js/gallery-data.js?v=6"></script>
-<script src="assets/js/app.js?v=6"></script>
+<!-- ═══════════════════════════ SUBMIT A REVIEW ═════════════════════════════ -->
+<div id="reviewModal" hidden role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle"
+     class="fixed inset-0 z-[100] flex items-center justify-center bg-navy-950/80 backdrop-blur-sm p-4">
+  <div class="relative max-h-[90svh] w-full max-w-md overflow-y-auto rounded-2xl border border-navy-900/10 bg-bone-50 p-6 text-navy-900 sm:p-8">
+    <button type="button" id="reviewModalClose" data-i18n-aria="reviews.form.closeAria" aria-label="بستن"
+            class="absolute top-4 end-4 inline-flex size-9 items-center justify-center rounded-full text-navy-900/50 cursor-pointer transition-colors hover:text-navy-900">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" class="size-5">
+        <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <h3 id="reviewModalTitle" class="sr-only" data-i18n="reviews.form.stepPhoneTitle">عضو باشگاهید؟</h3>
+
+    <!-- step 1: phone verification -->
+    <div id="reviewStepPhone">
+      <p class="font-display text-xl text-navy-900" data-i18n="reviews.form.stepPhoneTitle" aria-hidden="true">عضو باشگاهید؟</p>
+      <p class="mt-2 text-sm text-navy-900/70" data-i18n="reviews.form.stepPhoneBody">
+        برای ثبت نظر، ابتدا شماره موبایل عضویتتان را وارد کنید.
+      </p>
+      <form id="reviewPhoneForm" novalidate class="mt-5">
+        <label for="reviewPhone" class="mb-1.5 block text-sm font-medium text-navy-900" data-i18n="reviews.form.phoneLabel">شماره موبایل</label>
+        <input id="reviewPhone" name="phone" type="tel" required autocomplete="tel" inputmode="numeric"
+               dir="ltr" placeholder="09123456789" maxlength="11"
+               class="w-full rounded-lg border border-navy-900/20 bg-white px-4 py-3 text-navy-900 transition-colors focus:border-oak">
+        <div id="reviewPhoneMsg" role="status" aria-live="polite" class="mt-3"></div>
+        <button type="submit" id="reviewPhoneSubmit" class="btn btn-primary mt-4 w-full">
+          <span id="reviewPhoneSubmitLabel" data-i18n="reviews.form.continueBtn">ادامه</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- step: not a member -->
+    <div id="reviewStepNotMember" hidden>
+      <p class="font-display text-xl text-navy-900" data-i18n="reviews.form.notMemberTitle">این شماره عضو باشگاه نیست</p>
+      <p class="mt-2 text-sm text-navy-900/70" data-i18n="reviews.form.notMemberBody">
+        برای ثبت نظر باید عضو باشگاه مشتریان مری باشید. عضویت رایگان و سریع است.
+      </p>
+      <a href="#club" id="reviewJoinLink" class="btn btn-primary mt-5 w-full" data-i18n="reviews.form.joinNowCta">عضویت در باشگاه</a>
+      <button type="button" id="reviewTryAnother"
+              class="btn btn-outline mt-3 w-full border-navy-900/25! text-navy-900! hover:border-oak! hover:text-oak!"
+              data-i18n="reviews.form.tryAnotherPhone">امتحان با شماره‌ی دیگر</button>
+    </div>
+
+    <!-- step 2: review fields -->
+    <div id="reviewStepForm" hidden>
+      <p class="font-display text-xl text-navy-900" data-i18n="reviews.form.stepFormTitle">نظرتان را بنویسید</p>
+      <form id="reviewForm" novalidate class="mt-5">
+        <div class="mb-4">
+          <label for="reviewDisplayName" class="mb-1.5 block text-sm font-medium text-navy-900" data-i18n="reviews.form.displayNameLabel">نام نمایشی</label>
+          <input id="reviewDisplayName" name="displayName" type="text" required maxlength="60"
+                 class="w-full rounded-lg border border-navy-900/20 bg-white px-4 py-3 text-navy-900 transition-colors focus:border-oak">
+        </div>
+        <div class="mb-4">
+          <label for="reviewItemTag" class="mb-1.5 block text-sm font-medium text-navy-900" data-i18n="reviews.form.itemTagLabel">مربوط به کدام مورد از منو؟ (اختیاری)</label>
+          <input id="reviewItemTag" name="itemTag" type="text" list="reviewMenuItems" maxlength="60"
+                 data-i18n-placeholder="reviews.form.itemTagPlaceholder" placeholder="مثلاً لاته یا دلار لیمو"
+                 class="w-full rounded-lg border border-navy-900/20 bg-white px-4 py-3 text-navy-900 transition-colors focus:border-oak">
+          <datalist id="reviewMenuItems"></datalist>
+        </div>
+        <div class="mb-2">
+          <label for="reviewBody" class="mb-1.5 block text-sm font-medium text-navy-900" data-i18n="reviews.form.bodyLabel">متن نظر</label>
+          <textarea id="reviewBody" name="body" required maxlength="600" rows="4"
+                    class="w-full rounded-lg border border-navy-900/20 bg-white px-4 py-3 text-navy-900 transition-colors focus:border-oak"></textarea>
+        </div>
+
+        <!-- honeypot: hidden from sighted users and kept out of the tab order; real visitors never fill this -->
+        <div class="sr-only" aria-hidden="true">
+          <label for="reviewWebsite">Website</label>
+          <input id="reviewWebsite" name="website" type="text" tabindex="-1" autocomplete="off">
+        </div>
+        <input type="hidden" id="reviewFormLoadedAt">
+
+        <div id="reviewFormMsg" role="status" aria-live="polite" class="mt-3"></div>
+        <button type="submit" id="reviewFormSubmit" class="btn btn-primary mt-4 w-full">
+          <span id="reviewFormSubmitLabel" data-i18n="reviews.form.submit">ثبت نظر</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- step: success -->
+    <div id="reviewStepSuccess" hidden>
+      <p class="font-display text-xl text-navy-900" data-i18n="reviews.form.successTitle">متشکریم!</p>
+      <p class="mt-2 text-sm text-navy-900/70" data-i18n="reviews.form.successBody">
+        نظر شما ثبت شد. پس از بررسی، روی سایت نمایش داده می‌شود.
+      </p>
+      <button type="button" id="reviewModalDone" class="btn btn-primary mt-5 w-full" data-i18n="reviews.form.close">بستن</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/site-config.js?v=7"></script>
+<script src="assets/js/i18n.js?v=7"></script>
+<script src="assets/js/menu-data.js?v=7"></script>
+<script src="assets/js/gallery-data.js?v=7"></script>
+<script src="assets/js/app.js?v=7"></script>
 </body>
 </html>

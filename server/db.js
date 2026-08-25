@@ -43,6 +43,38 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_rewards_member ON rewards(member_id);
+
+  CREATE TABLE IF NOT EXISTS reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    phone TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    body TEXT NOT NULL,
+    item_tag TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    reaction_count INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    approved_at TEXT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status);
+  CREATE INDEX IF NOT EXISTS idx_reviews_ranking ON reviews(status, reaction_count DESC, created_at DESC);
+
+  CREATE TABLE IF NOT EXISTS reactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    review_id INTEGER NOT NULL REFERENCES reviews(id),
+    fingerprint TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (review_id, fingerprint)
+  );
+
+  -- Single-row cache of the homepage's top-8 review ids, refreshed at most
+  -- every 12h (see getTop8Ids in server.js) so popular reviews can't
+  -- permanently lock out newer ones from ever being seen.
+  CREATE TABLE IF NOT EXISTS homepage_top8 (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    review_ids TEXT NOT NULL,
+    computed_at INTEGER NOT NULL
+  );
 `);
 
 // Seed default loyalty settings on first run only — never overwrites a value

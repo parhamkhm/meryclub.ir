@@ -121,6 +121,160 @@ app.post("/api/club/join", joinLimiter, (req, res) => {
   });
 });
 
+// ---- public: reviews & suggestions ------------------------------------
+
+const REVIEW_NAME_MAXLEN = 60;
+const REVIEW_BODY_MAXLEN = 600;
+const REVIEW_TAG_MAXLEN = 60;
+const TOP8_TTL_MS = 12 * 60 * 60 * 1000; // recompute cadence, not live
+
+const reviewVerifyLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, code: "rate_limited", error: "تعداد درخواست‌ها زیاد بوده، کمی بعد دوباره امتحان کنید." },
+});
+
+// Only ever returns ok:true/false — never the member's name. Returning a
+// name here would let anyone enumerate real customers by guessing numbers.
+app.post("/api/reviews/verify-phone", reviewVerifyLimiter, (req, res) => {
+  const cleanPhone = normalizePhone((req.body || {}).phone);
+  if (!IRAN_MOBILE.test(cleanPhone)) {
+    return res.status(400).json({ ok: false, code: "invalid_phone", error: "شماره موبایل معتبر نیست. مثال: 09123456789" });
+  }
+  const member = db.prepare("SELECT id FROM members WHERE phone = ?").get(cleanPhone);
+  if (!member) {
+    return res.status(404).json({ ok: false, code: "not_member", error: "این شماره عضو باشگاه مشتریان نیست." });
+  }
+  return res.json({ ok: true });
+});
+
+const reviewSubmitLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, code: "rate_limited", error: "تعداد درخواست‌ها زیاد بوده، کمی بعد دوباره امتحان کنید." },
+});
+
+app.post("/api/reviews", reviewSubmitLimiter, (req, res) => {
+  const { phone, displayName, body, itemTag, website, formLoadedAt } = req.body || {};
+
+  // honeypot: real users never fill this hidden field
+  if (website) return res.status(400).json({ ok: false, code: "invalid_request", error: "درخواست نامعتبر است." });
+
+  // too-fast submission is a strong bot signal
+  const elapsed = Date.now() - Number(formLoadedAt || 0);
+  if (!formLoadedAt || Number.isNaN(elapsed) || elapsed < 1500) {
+    return res.status(400).json({ ok: false, code: "invalid_request", error: "درخواست نامعتبر است." });
+  }
+
+  const cleanPhone = normalizePhone(phone);
+  if (!IRAN_MOBILE.test(cleanPhone)) {
+    return res.status(400).json({ ok: false, code: "invalid_phone", error: "شماره موبایل معتبر نیست. مثال: 09123456789" });
+  }
+
+  const member = db.prepare("SELECT id FROM members WHERE phone = ?").get(cleanPhone);
+  if (!member) {
+    return res.status(403).json({ ok: false, code: "not_member", error: "فقط اعضای باشگاه مشتریان می‌توانند نظر ثبت کنند." });
+  }
+
+  const cleanName = String(displayName || "").trim().slice(0, REVIEW_NAME_MAXLEN);
+  const cleanBody = String(body || "").trim().slice(0, REVIEW_BODY_MAXLEN);
+  const cleanTag = String(itemTag || "").trim().slice(0, REVIEW_TAG_MAXLEN) || null;
+
+  if (cleanName.length < 2) {
+    return res.status(400).json({ ok: false, code: "invalid_name", error: "نام نمایشی را کامل وارد کنید." });
+  }
+  if (cleanBody.length < 10) {
+    return res.status(400).json({ ok: false, code: "invalid_body", error: "متن نظر خیلی کوتاه است." });
+  }
+
+  db.prepare(
+    "INSERT INTO reviews (phone, display_name, body, item_tag) VALUES (?, ?, ?, ?)"
+  ).run(cleanPhone, cleanName, cleanBody, cleanTag);
+
+  return res.json({ ok: true });
+});
+
+// Recomputed from the full approved pool at most every 12h (not live) so a
+// review outside the current top 8 still has a fair shot at entering it —
+// reactions given from /comments (prompt 2) count toward this ranking too.
+function computeTop8() {
+  const rows = db.prepare(
+    "SELECT id FROM reviews WHERE status = 'approved' ORDER BY reaction_count DESC, created_at DESC LIMIT 8"
+  ).all();
+  const ids = rows.map((r) => r.id);
+  const computedAt = Date.now();
+  db.prepare(
+    `INSERT INTO homepage_top8 (id, review_ids, computed_at) VALUES (1, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET review_ids = excluded.review_ids, computed_at = excluded.computed_at`
+  ).run(JSON.stringify(ids), computedAt);
+  return ids;
+}
+
+function getTop8Ids() {
+  const cached = db.prepare("SELECT review_ids, computed_at FROM homepage_top8 WHERE id = 1").get();
+  if (!cached || Date.now() - cached.computed_at > TOP8_TTL_MS) return computeTop8();
+  return JSON.parse(cached.review_ids);
+}
+
+app.get("/api/reviews/top8", (req, res) => {
+  const ids = getTop8Ids();
+  if (ids.length === 0) return res.json({ ok: true, reviews: [] });
+
+  const placeholders = ids.map(() => "?").join(",");
+  const rows = db.prepare(
+    `SELECT id, display_name, body, item_tag, reaction_count, created_at FROM reviews WHERE id IN (${placeholders})`
+  ).all(...ids);
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const ordered = ids.map((id) => byId.get(id)).filter(Boolean);
+  res.json({ ok: true, reviews: ordered });
+});
+
+// Full approved pool — used by prompt 2's /comments page.
+app.get("/api/reviews", (req, res) => {
+  const rows = db.prepare(
+    "SELECT id, display_name, body, item_tag, reaction_count, created_at FROM reviews WHERE status = 'approved' ORDER BY created_at DESC LIMIT 500"
+  ).all();
+  res.json({ ok: true, reviews: rows });
+});
+
+const reactionLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, code: "rate_limited", error: "تعداد درخواست‌ها زیاد بوده، کمی بعد دوباره امتحان کنید." },
+});
+
+// Shared counter: a reaction given from the homepage or from /comments
+// (prompt 2) hits this same endpoint and the same review row. `fingerprint`
+// is a client-generated localStorage id, not real authentication — good
+// enough to stop casual repeat-clicking on a café site, not a security boundary.
+app.post("/api/reviews/:id/react", reactionLimiter, (req, res) => {
+  const id = Number(req.params.id);
+  const fingerprint = String((req.body || {}).fingerprint || "").trim().slice(0, 100);
+
+  if (!Number.isInteger(id) || id <= 0 || fingerprint.length < 8) {
+    return res.status(400).json({ ok: false, code: "invalid_request", error: "درخواست نامعتبر است." });
+  }
+
+  const review = db.prepare("SELECT id, reaction_count FROM reviews WHERE id = ? AND status = 'approved'").get(id);
+  if (!review) return res.status(404).json({ ok: false, code: "not_found", error: "نظر یافت نشد." });
+
+  try {
+    db.prepare("INSERT INTO reactions (review_id, fingerprint) VALUES (?, ?)").run(id, fingerprint);
+  } catch (err) {
+    return res.json({ ok: true, alreadyReacted: true, reactionCount: review.reaction_count });
+  }
+
+  db.prepare("UPDATE reviews SET reaction_count = reaction_count + 1 WHERE id = ?").run(id);
+  const updated = db.prepare("SELECT reaction_count FROM reviews WHERE id = ?").get(id);
+  res.json({ ok: true, alreadyReacted: false, reactionCount: updated.reaction_count });
+});
+
 // ---- admin: auth -------------------------------------------------------
 
 const loginLimiter = rateLimit({
@@ -227,6 +381,32 @@ app.post("/api/admin/settings", requireAdmin, requireSameOrigin, (req, res) => {
 app.get("/api/admin/settings/audit", requireAdmin, (req, res) => {
   const rows = db.prepare("SELECT * FROM settings_audit ORDER BY id DESC LIMIT 100").all();
   res.json({ ok: true, audit: rows });
+});
+
+// ---- admin: reviews -------------------------------------------------------
+
+app.get("/api/admin/reviews", requireAdmin, (req, res) => {
+  const status = ["pending", "approved", "rejected"].includes(req.query.status) ? req.query.status : "pending";
+  const rows = db.prepare(
+    "SELECT * FROM reviews WHERE status = ? ORDER BY created_at DESC LIMIT 500"
+  ).all(status);
+  res.json({ ok: true, reviews: rows });
+});
+
+app.post("/api/admin/reviews/:id/approve", requireAdmin, requireSameOrigin, (req, res) => {
+  const id = Number(req.params.id);
+  const review = db.prepare("SELECT id FROM reviews WHERE id = ?").get(id);
+  if (!review) return res.status(404).json({ ok: false, error: "یافت نشد." });
+  db.prepare("UPDATE reviews SET status = 'approved', approved_at = datetime('now') WHERE id = ?").run(id);
+  res.json({ ok: true });
+});
+
+app.post("/api/admin/reviews/:id/reject", requireAdmin, requireSameOrigin, (req, res) => {
+  const id = Number(req.params.id);
+  const review = db.prepare("SELECT id FROM reviews WHERE id = ?").get(id);
+  if (!review) return res.status(404).json({ ok: false, error: "یافت نشد." });
+  db.prepare("UPDATE reviews SET status = 'rejected' WHERE id = ?").run(id);
+  res.json({ ok: true });
 });
 
 // ---- static admin page ---------------------------------------------------

@@ -92,6 +92,11 @@ Then open `http://localhost:3210/`. `MERY_INSECURE_COOKIES` is for local
 `http://` testing only — production (behind HTTPS via nginx) never sets it, so
 admin session cookies stay `Secure`.
 
+(`server/dev-server.js` sets the same three env vars in-process and then
+requires `server.js` — a convenience entry point for tools that can't set
+environment variables before launching a command, e.g. `.claude/launch.json`'s
+`server` config. Not used in production.)
+
 ### `server/config.json` (not committed — see `config.example.json`)
 
 ```json
@@ -128,6 +133,22 @@ There's no CI/CD pipeline yet — updates are pushed manually to the VPS:
   (`127.0.0.1:3210`); everything else is served as static files.
 - HTTPS is a Let's Encrypt certificate via certbot, auto-renewing.
 
+### Deploying the Reviews & Suggestions feature
+
+No new moving parts — it reuses the same backend, port, and deploy steps above:
+
+- Copy the updated `server.js`, `db.js`, and `public/` (index.html + app.js,
+  now with a "نظرات" tab) into `/opt/meryclub-api/`, then
+  `systemctl restart meryclub-api`. On startup, `db.js` runs
+  `CREATE TABLE IF NOT EXISTS` for the three new tables (`reviews`,
+  `reactions`, `homepage_top8`) against the existing `club.db` — no manual
+  migration step, no new env vars, no new npm dependencies.
+- Copy the updated `index.html` and `assets/` to `/var/www/meryclub.ir/` as
+  usual. `index.html`'s asset query strings were bumped to `?v=7`.
+- The homepage's top-8 ranking is cached for 12h and computed on demand
+  (first request after the cache goes stale recomputes it) — no cron job to
+  set up.
+
 ## Roadmap / not built yet
 
 The Customer Club currently covers: signup form, one-time welcome perk
@@ -135,3 +156,7 @@ The Customer Club currently covers: signup form, one-time welcome perk
 redeem rewards. Not yet built: a punch-card/points loyalty system and SMS
 campaigns — both need a staff-facing order-confirmation flow and (for SMS) a
 paid Iranian SMS provider account, neither of which exist yet.
+
+The Reviews & Suggestions feature (homepage section + backend) is built;
+the dedicated `/comments` page and its routing are a separate, not-yet-built
+piece (tracked outside this repo's prompts as its own task).

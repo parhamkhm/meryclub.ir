@@ -38,6 +38,18 @@
   .row{display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end;}
   .row > *{flex:1;min-width:160px;}
   .top-actions{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.75rem;}
+  .tabs{display:flex;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap;}
+  .tab-btn{background:transparent;border:1px solid var(--border);color:var(--navy);padding:.55rem 1.2rem;font-size:.85rem;}
+  .tab-btn.active{background:var(--navy);color:var(--bone);border-color:var(--navy);}
+  .subtabs{display:flex;gap:.5rem;margin-bottom:1rem;}
+  .subtab-btn{background:transparent;border:1px solid var(--border);color:var(--navy);padding:.4rem .9rem;font-size:.78rem;}
+  .subtab-btn.active{background:var(--amber);border-color:var(--amber);}
+  .review-card{border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.85rem;}
+  .review-card .meta{font-size:.78rem;color:#7a7a7a;margin-bottom:.5rem;display:flex;gap:.6rem;flex-wrap:wrap;}
+  .review-card .body-text{margin:.4rem 0 .75rem;line-height:1.7;}
+  .review-card .actions{display:flex;gap:.5rem;}
+  .btn-ok{background:var(--ok);color:#fff;padding:.4rem .9rem;font-size:.8rem;}
+  .btn-reject{background:transparent;border:1px solid var(--danger);color:var(--danger);padding:.4rem .9rem;font-size:.8rem;}
 </style>
 </head>
 <body>
@@ -69,40 +81,60 @@
   <!-- DASHBOARD -->
   <div id="dashView" class="hidden">
 
-    <section class="card">
-      <h2 style="margin-top:0;">تنظیمات جایزهٔ خوش‌آمدگویی</h2>
-      <p class="muted">این مقادیر بلافاصله روی عضویت‌های جدید اثر می‌گذارد؛ عضویت‌های قبلی تغییر نمی‌کنند.</p>
-      <form id="settingsForm">
-        <div class="row">
-          <div class="field">
-            <label for="rewardDesc">توضیح جایزه</label>
-            <input id="rewardDesc" required>
-          </div>
-          <div class="field" style="max-width:160px;">
-            <label for="rewardDays">اعتبار (روز)</label>
-            <input id="rewardDays" type="number" min="1" max="365" required>
-          </div>
-          <button type="submit" class="btn-primary">ذخیره</button>
-        </div>
-        <p id="settingsMsg" class="hidden"></p>
-      </form>
-    </section>
+    <div class="tabs">
+      <button type="button" class="tab-btn active" data-tab="members">اعضا</button>
+      <button type="button" class="tab-btn" data-tab="reviews">نظرات <span id="pendingCount"></span></button>
+    </div>
 
-    <section class="card">
-      <div class="top-actions">
-        <h2 style="margin:0;">اعضا</h2>
-        <input id="searchBox" placeholder="جستجو با نام یا شماره…" style="max-width:220px;">
-      </div>
-      <div style="overflow-x:auto;">
-        <table>
-          <thead>
-            <tr><th>نام</th><th>شماره</th><th>تاریخ عضویت</th><th>جایزه</th><th></th></tr>
-          </thead>
-          <tbody id="membersBody"></tbody>
-        </table>
-      </div>
-      <p id="membersEmpty" class="muted hidden">هنوز عضوی ثبت نشده است.</p>
-    </section>
+    <div id="membersView">
+      <section class="card">
+        <h2 style="margin-top:0;">تنظیمات جایزهٔ خوش‌آمدگویی</h2>
+        <p class="muted">این مقادیر بلافاصله روی عضویت‌های جدید اثر می‌گذارد؛ عضویت‌های قبلی تغییر نمی‌کنند.</p>
+        <form id="settingsForm">
+          <div class="row">
+            <div class="field">
+              <label for="rewardDesc">توضیح جایزه</label>
+              <input id="rewardDesc" required>
+            </div>
+            <div class="field" style="max-width:160px;">
+              <label for="rewardDays">اعتبار (روز)</label>
+              <input id="rewardDays" type="number" min="1" max="365" required>
+            </div>
+            <button type="submit" class="btn-primary">ذخیره</button>
+          </div>
+          <p id="settingsMsg" class="hidden"></p>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="top-actions">
+          <h2 style="margin:0;">اعضا</h2>
+          <input id="searchBox" placeholder="جستجو با نام یا شماره…" style="max-width:220px;">
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr><th>نام</th><th>شماره</th><th>تاریخ عضویت</th><th>جایزه</th><th></th></tr>
+            </thead>
+            <tbody id="membersBody"></tbody>
+          </table>
+        </div>
+        <p id="membersEmpty" class="muted hidden">هنوز عضوی ثبت نشده است.</p>
+      </section>
+    </div>
+
+    <div id="reviewsView" class="hidden">
+      <section class="card">
+        <h2 style="margin-top:0;">نظرات و پیشنهادات</h2>
+        <div class="subtabs">
+          <button type="button" class="subtab-btn active" data-status="pending">در انتظار</button>
+          <button type="button" class="subtab-btn" data-status="approved">تأییدشده</button>
+          <button type="button" class="subtab-btn" data-status="rejected">ردشده</button>
+        </div>
+        <div id="reviewsList"></div>
+        <p id="reviewsEmpty" class="muted hidden">موردی برای نمایش نیست.</p>
+      </section>
+    </div>
 
   </div>
 </main>

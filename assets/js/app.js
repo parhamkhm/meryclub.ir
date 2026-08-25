@@ -729,6 +729,491 @@
     langHooks.push(renderMessage);
   }
 
+  /* -- reviews & suggestions ------------------------------------------------ */
+
+  function wireReviews() {
+    var stageEl = $("#reviewsStage");
+    if (!stageEl) return;
+
+    var navEl = $("#reviewsNav");
+    var dotsEl = $("#reviewsDots");
+    var prevBtn = $("#reviewsPrev");
+    var nextBtn = $("#reviewsNext");
+    var openModalBtn = $("#reviewOpenModal");
+
+    var modal = $("#reviewModal");
+    var modalClose = $("#reviewModalClose");
+    var steps = {
+      phone: $("#reviewStepPhone"),
+      notMember: $("#reviewStepNotMember"),
+      form: $("#reviewStepForm"),
+      success: $("#reviewStepSuccess"),
+    };
+    var phoneForm = $("#reviewPhoneForm");
+    var phoneInput = $("#reviewPhone");
+    var phoneSubmitBtn = $("#reviewPhoneSubmit");
+    var phoneSubmitLabel = $("#reviewPhoneSubmitLabel");
+    var phoneMsg = $("#reviewPhoneMsg");
+    var tryAnotherBtn = $("#reviewTryAnother");
+    var joinLink = $("#reviewJoinLink");
+    var reviewForm = $("#reviewForm");
+    var displayNameInput = $("#reviewDisplayName");
+    var itemTagInput = $("#reviewItemTag");
+    var bodyInput = $("#reviewBody");
+    var websiteInput = $("#reviewWebsite");
+    var formLoadedAtInput = $("#reviewFormLoadedAt");
+    var formMsg = $("#reviewFormMsg");
+    var formSubmitBtn = $("#reviewFormSubmit");
+    var formSubmitLabel = $("#reviewFormSubmitLabel");
+    var doneBtn = $("#reviewModalDone");
+
+    var HEART_OUTLINE =
+      '<svg class="size-4 fill-none stroke-current" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">' +
+      '<path d="M12 21s-7.5-4.6-10-9.1C.4 8.6 2 5 5.6 5c2 0 3.4 1 4.4 2.4C11 6 12.4 5 14.4 5 18 5 19.6 8.6 22 11.9 19.5 16.4 12 21 12 21z"/></svg>';
+    var HEART_FILLED =
+      '<svg class="size-4 fill-amber" viewBox="0 0 24 24" aria-hidden="true">' +
+      '<path d="M12 21s-7.5-4.6-10-9.1C.4 8.6 2 5 5.6 5c2 0 3.4 1 4.4 2.4C11 6 12.4 5 14.4 5 18 5 19.6 8.6 22 11.9 19.5 16.4 12 21 12 21z"/></svg>';
+
+    var reviews = [];
+    var current = 0;
+    var isAnimating = false;
+    var timer = null;
+    var cardEl = null;
+    var stageState = "loading";
+    var verifiedPhone = null;
+    var lastFocusBeforeModal = null;
+
+    /* -- local guards: fingerprint + already-reacted set -------------------- */
+
+    function getFingerprint() {
+      var KEY = "mery.reviewFingerprint";
+      try {
+        var v = localStorage.getItem(KEY);
+        if (v) return v;
+        v = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ("fp-" + Date.now() + "-" + Math.random().toString(36).slice(2));
+        localStorage.setItem(KEY, v);
+        return v;
+      } catch (e) {
+        return "fp-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+      }
+    }
+
+    var REACTED_KEY = "mery.reactedReviewIds";
+    function loadReactedSet() {
+      try {
+        var raw = localStorage.getItem(REACTED_KEY);
+        return new Set(raw ? JSON.parse(raw) : []);
+      } catch (e) { return new Set(); }
+    }
+    function saveReactedSet() {
+      try { localStorage.setItem(REACTED_KEY, JSON.stringify(Array.from(reactedSet))); } catch (e) { /* private mode */ }
+    }
+    var reactedSet = loadReactedSet();
+
+    /* -- date + card rendering ------------------------------------------- */
+
+    function formatRelative(s) {
+      // SQLite's datetime('now') yields "YYYY-MM-DD HH:MM:SS" (UTC, no offset marker)
+      var d = new Date(String(s).replace(" ", "T") + "Z");
+      var diffDays = Math.floor((Date.now() - d.getTime()) / 86400000);
+      if (diffDays <= 0) return t.reviews.today;
+      if (diffDays === 1) return t.reviews.yesterday;
+      return t.reviews.daysAgo(digits(diffDays));
+    }
+
+    /* review text is user-submitted — always set via textContent, never innerHTML */
+    function buildReviewCard(review, rank) {
+      var card = document.createElement("div");
+      card.className = "reviews-card";
+
+      var top = document.createElement("div");
+      top.className = "mb-4 flex items-start justify-between gap-4";
+
+      var quote = document.createElement("span");
+      quote.setAttribute("aria-hidden", "true");
+      quote.innerHTML = '<svg class="h-[26px] w-9 fill-amber/90" viewBox="0 0 48 36"><path d="M0 36V20.7C0 9.3 6.9 1.7 18.4 0l1.8 5.4C13 7 9.8 11 9.8 16.6h9.6V36H0zm27.6 0V20.7C27.6 9.3 34.5 1.7 46 0l1.8 5.4c-7.2 1.6-10.4 5.6-10.4 11.2h9.6V36H27.6z"/></svg>';
+      top.appendChild(quote);
+
+      var badge = document.createElement("span");
+      badge.className = "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-amber-soft px-3 py-1.5 text-xs font-semibold text-navy-900";
+      badge.innerHTML = '<svg class="size-3 fill-navy-900" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.6 7.1.7-5.4 4.8 1.6 7-6.2-3.7L5.8 21l1.6-7-5.4-4.8 7.1-.7z"/></svg>';
+      var badgeText = document.createElement("span");
+      badgeText.textContent = t.reviews.rankBadge(digits(rank));
+      badge.appendChild(badgeText);
+      top.appendChild(badge);
+      card.appendChild(top);
+
+      var body = document.createElement("p");
+      body.className = "mb-7 line-clamp-6 font-display text-[clamp(1.15rem,2.4vw,1.4rem)] leading-snug text-bone-50";
+      body.textContent = review.body;
+      card.appendChild(body);
+
+      var bottom = document.createElement("div");
+      bottom.className = "flex flex-wrap items-center justify-between gap-4 border-t border-bone/15 pt-5";
+
+      var person = document.createElement("div");
+      person.className = "flex items-center gap-3";
+
+      var avatar = document.createElement("div");
+      avatar.className = "flex size-11 shrink-0 items-center justify-center rounded-full bg-amber-soft text-base font-bold text-navy-900";
+      avatar.textContent = (review.display_name || "").trim().charAt(0) || "?";
+      person.appendChild(avatar);
+
+      var info = document.createElement("div");
+      var nameEl = document.createElement("p");
+      nameEl.className = "text-sm font-semibold text-bone-50";
+      nameEl.textContent = review.display_name;
+      info.appendChild(nameEl);
+
+      var metaEl = document.createElement("p");
+      metaEl.className = "mt-0.5 text-xs text-bone-300";
+      var metaParts = [formatRelative(review.created_at), t.reviews.memberLabel];
+      if (review.item_tag) metaParts.push(review.item_tag);
+      metaEl.textContent = metaParts.join(" · ");
+      info.appendChild(metaEl);
+
+      person.appendChild(info);
+      bottom.appendChild(person);
+
+      var reacted = reactedSet.has(review.id);
+      var reactBtn = document.createElement("button");
+      reactBtn.type = "button";
+      reactBtn.className = "reaction-btn inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2 py-1 text-sm tabular-nums text-bone-300 transition-colors hover:text-amber disabled:cursor-default disabled:hover:text-bone-300";
+      reactBtn.setAttribute("data-react-id", String(review.id));
+      reactBtn.setAttribute("aria-label", t.reviews.reactAria);
+      reactBtn.setAttribute("aria-pressed", reacted ? "true" : "false");
+      if (reacted) reactBtn.disabled = true;
+
+      var heartWrap = document.createElement("span");
+      heartWrap.className = "reaction-heart inline-flex";
+      heartWrap.innerHTML = reacted ? HEART_FILLED : HEART_OUTLINE;
+      reactBtn.appendChild(heartWrap);
+
+      var countEl = document.createElement("span");
+      countEl.className = "reaction-count";
+      countEl.textContent = digits(review.reaction_count);
+      reactBtn.appendChild(countEl);
+
+      bottom.appendChild(reactBtn);
+      card.appendChild(bottom);
+
+      return card;
+    }
+
+    function renderDots() {
+      dotsEl.innerHTML = "";
+      reviews.forEach(function (r, i) {
+        var dot = document.createElement("button");
+        dot.type = "button";
+        dot.className = "reviews-dot" + (i === current ? " active" : "");
+        dot.setAttribute("aria-label", t.reviews.dotAria(digits(i + 1)));
+        dot.addEventListener("click", function () {
+          if (i === current) return;
+          goTo(i, i > current ? "next" : "prev");
+        });
+        dotsEl.appendChild(dot);
+      });
+    }
+
+    function renderStatus(key) {
+      navEl.hidden = true;
+      stageEl.innerHTML = "";
+      var p = document.createElement("p");
+      p.id = "reviewsStatus";
+      p.className = "rounded-2xl border border-navy-900/10 bg-bone px-6 py-16 text-center text-navy-900/60";
+      p.textContent = t.reviews[key];
+      stageEl.appendChild(p);
+    }
+
+    function restartAutoplay() {
+      if (reduceMotion || reviews.length <= 1) return;
+      clearInterval(timer);
+      timer = setInterval(function () { goTo(current + 1, "next"); }, 6000);
+    }
+
+    function renderReviews() {
+      if (!reviews.length) { stageState = "empty"; renderStatus("empty"); return; }
+      stageState = "ready";
+      current = Math.min(current, reviews.length - 1);
+      stageEl.innerHTML = "";
+      cardEl = buildReviewCard(reviews[current], current + 1);
+      stageEl.appendChild(cardEl);
+      renderDots();
+      navEl.hidden = reviews.length <= 1;
+      restartAutoplay();
+    }
+
+    // direction 'next' = incoming card enters from the right, outgoing exits left.
+    // direction 'prev' = incoming card enters from the left, outgoing exits right.
+    function goTo(newIndexRaw, direction) {
+      if (!reviews.length) return;
+      var newIndex = (newIndexRaw + reviews.length) % reviews.length;
+      if (isAnimating || newIndex === current) return;
+      current = newIndex;
+      renderDots();
+      restartAutoplay();
+
+      if (reduceMotion) {
+        var plain = buildReviewCard(reviews[current], current + 1);
+        cardEl.replaceWith(plain);
+        cardEl = plain;
+        return;
+      }
+
+      isAnimating = true;
+      var rect = stageEl.getBoundingClientRect();
+      stageEl.style.height = rect.height + "px";
+
+      var oldCard = cardEl;
+      oldCard.classList.add("is-sliding");
+
+      var newCard = buildReviewCard(reviews[current], current + 1);
+      newCard.classList.add("is-sliding");
+      newCard.style.transform = direction === "next" ? "translateX(100%)" : "translateX(-100%)";
+      newCard.style.opacity = "0";
+      stageEl.appendChild(newCard);
+
+      // force reflow so the starting transform is committed before we animate
+      newCard.getBoundingClientRect();
+
+      requestAnimationFrame(function () {
+        oldCard.style.transition = "transform .45s cubic-bezier(.22,.61,.36,1), opacity .45s ease";
+        newCard.style.transition = "transform .45s cubic-bezier(.22,.61,.36,1), opacity .45s ease";
+        oldCard.style.transform = direction === "next" ? "translateX(-100%)" : "translateX(100%)";
+        oldCard.style.opacity = "0";
+        newCard.style.transform = "translateX(0)";
+        newCard.style.opacity = "1";
+      });
+
+      function settle() {
+        newCard.removeEventListener("transitionend", settle);
+        oldCard.remove();
+        newCard.classList.remove("is-sliding");
+        newCard.style.transform = "";
+        newCard.style.opacity = "";
+        newCard.style.transition = "";
+        stageEl.style.height = "";
+        cardEl = newCard;
+        isAnimating = false;
+      }
+      newCard.addEventListener("transitionend", settle);
+    }
+
+    prevBtn.addEventListener("click", function () { goTo(current - 1, "prev"); });
+    nextBtn.addEventListener("click", function () { goTo(current + 1, "next"); });
+    stageEl.addEventListener("mouseenter", function () { clearInterval(timer); });
+    stageEl.addEventListener("mouseleave", restartAutoplay);
+
+    /* reactions are delegated on the stage since cardEl gets replaced on every slide */
+    stageEl.addEventListener("click", function (e) {
+      var btn = e.target.closest ? e.target.closest("[data-react-id]") : null;
+      if (!btn || btn.disabled) return;
+      var id = Number(btn.getAttribute("data-react-id"));
+      btn.disabled = true;
+      fetch("/api/reviews/" + id + "/react", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ fingerprint: getFingerprint() }),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) { btn.disabled = false; return; }
+          reactedSet.add(id);
+          saveReactedSet();
+          btn.setAttribute("aria-pressed", "true");
+          var countEl = btn.querySelector(".reaction-count");
+          if (countEl) countEl.textContent = digits(data.reactionCount);
+          var heartWrap = btn.querySelector(".reaction-heart");
+          if (heartWrap) heartWrap.innerHTML = HEART_FILLED;
+          var reviewData = reviews.filter(function (r) { return r.id === id; })[0];
+          if (reviewData) reviewData.reaction_count = data.reactionCount;
+        })
+        .catch(function () { btn.disabled = false; });
+    });
+
+    function fetchTop8() {
+      fetch("/api/reviews/top8", { credentials: "same-origin" })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) throw new Error("bad response");
+          reviews = data.reviews || [];
+          current = 0;
+          renderReviews();
+        })
+        .catch(function () { stageState = "loadError"; renderStatus("loadError"); });
+    }
+
+    langHooks.push(function () {
+      if (stageState === "ready" && reviews.length) {
+        stageEl.innerHTML = "";
+        cardEl = buildReviewCard(reviews[current], current + 1);
+        stageEl.appendChild(cardEl);
+        renderDots();
+      } else if (stageState !== "loading") {
+        renderStatus(stageState);
+      }
+    });
+
+    fetchTop8();
+
+    /* -- submission modal ---------------------------------------------------- */
+
+    if (!modal) return;
+
+    var modalTitle = $("#reviewModalTitle");
+    function showStep(name) {
+      Object.keys(steps).forEach(function (k) { steps[k].hidden = k !== name; });
+      // keep the dialog's accessible name (sr-only, aria-labelledby target) in
+      // sync with whichever step is visible — it doesn't update on its own
+      var heading = steps[name].querySelector(".font-display");
+      if (modalTitle && heading) modalTitle.textContent = heading.textContent;
+    }
+
+    function populateItemDatalist() {
+      var datalist = $("#reviewMenuItems");
+      if (!datalist || typeof MERY_MENU === "undefined") return;
+      var seen = {};
+      datalist.innerHTML = "";
+      MERY_MENU.forEach(function (cat) {
+        cat.items.forEach(function (item) {
+          var name = item[lang] || item.en;
+          if (!name || seen[name]) return;
+          seen[name] = true;
+          var opt = document.createElement("option");
+          opt.value = name;
+          datalist.appendChild(opt);
+        });
+      });
+    }
+
+    function onModalKey(e) {
+      if (e.key === "Escape") { closeModal(); return; }
+      if (e.key !== "Tab") return;
+      var focusables = $$("button, input, a[href], textarea", modal).filter(function (el) {
+        return el.offsetParent !== null && !el.disabled;
+      });
+      if (!focusables.length) return;
+      var first = focusables[0], last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+
+    function openModal() {
+      lastFocusBeforeModal = document.activeElement;
+      verifiedPhone = null;
+      phoneForm.reset();
+      phoneMsg.innerHTML = "";
+      showStep("phone");
+      populateItemDatalist();
+      modal.hidden = false;
+      document.body.style.overflow = "hidden";
+      document.addEventListener("keydown", onModalKey);
+      phoneInput.focus();
+    }
+
+    function closeModal() {
+      modal.hidden = true;
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onModalKey);
+      if (lastFocusBeforeModal && lastFocusBeforeModal.focus) lastFocusBeforeModal.focus();
+    }
+
+    openModalBtn.addEventListener("click", openModal);
+    modalClose.addEventListener("click", closeModal);
+    doneBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", function (e) { if (e.target === modal) closeModal(); });
+    joinLink.addEventListener("click", closeModal);
+
+    tryAnotherBtn.addEventListener("click", function () {
+      showStep("phone");
+      phoneForm.reset();
+      phoneMsg.innerHTML = "";
+      phoneInput.focus();
+    });
+
+    function showMsg(container, text) {
+      container.innerHTML = "";
+      var p = document.createElement("p");
+      p.className = "text-sm text-red-700";
+      p.textContent = text;
+      container.appendChild(p);
+    }
+
+    phoneForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (phoneSubmitBtn.disabled) return;
+      phoneMsg.innerHTML = "";
+      phoneSubmitBtn.disabled = true;
+      phoneSubmitLabel.textContent = t.reviews.form.checking;
+
+      fetch("/api/reviews/verify-phone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ phone: phoneInput.value }),
+      })
+        .then(function (r) { return r.json().then(function (data) { return { status: r.status, data: data }; }); })
+        .then(function (res) {
+          if (res.data.ok) {
+            verifiedPhone = phoneInput.value.trim();
+            formLoadedAtInput.value = String(Date.now());
+            reviewForm.reset();
+            formMsg.innerHTML = "";
+            showStep("form");
+            displayNameInput.focus();
+          } else if (res.data.code === "not_member") {
+            showStep("notMember");
+          } else {
+            showMsg(phoneMsg, (t.reviews.form.errors[res.data.code]) || res.data.error || t.reviews.form.errors.generic);
+          }
+        })
+        .catch(function () { showMsg(phoneMsg, t.reviews.form.errors.network); })
+        .then(function () {
+          phoneSubmitBtn.disabled = false;
+          phoneSubmitLabel.textContent = t.reviews.form.continueBtn;
+        });
+    });
+
+    reviewForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (formSubmitBtn.disabled) return;
+      formMsg.innerHTML = "";
+      formSubmitBtn.disabled = true;
+      formSubmitLabel.textContent = t.reviews.form.submitting;
+
+      fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          phone: verifiedPhone,
+          displayName: displayNameInput.value,
+          body: bodyInput.value,
+          itemTag: itemTagInput.value,
+          website: websiteInput.value,
+          formLoadedAt: Number(formLoadedAtInput.value),
+        }),
+      })
+        .then(function (r) { return r.json().then(function (data) { return { status: r.status, data: data }; }); })
+        .then(function (res) {
+          if (res.data.ok) {
+            showStep("success");
+            fetchTop8(); // a fresh submission doesn't crack the top 8 (12h cache), but keep data current
+          } else if (res.data.code === "not_member") {
+            showStep("notMember");
+          } else {
+            showMsg(formMsg, (t.reviews.form.errors[res.data.code]) || res.data.error || t.reviews.form.errors.generic);
+          }
+        })
+        .catch(function () { showMsg(formMsg, t.reviews.form.errors.network); })
+        .then(function () {
+          formSubmitBtn.disabled = false;
+          formSubmitLabel.textContent = t.reviews.form.submit;
+        });
+    });
+  }
+
   /* -- boot ---------------------------------------------------------------- */
 
   function init() {
@@ -757,6 +1242,7 @@
     safe(wireChrome);
     safe(wireVideo);
     safe(wireClub);
+    safe(wireReviews);
     safe(wireMenuSearch);
     safe(function () { observeReveals(document); });
   }
