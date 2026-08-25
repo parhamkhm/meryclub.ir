@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>همه‌ی نظرات مشتری‌ها | کافه مری</title>
+<meta name="description" content="همه‌ی نظرات و پیشنهادات تأییدشده‌ی اعضای باشگاه مشتریان مری، به ترتیب بیشترین ابراز علاقه.">
+<meta name="theme-color" content="#0C1523">
+
+<link rel="icon" href="/assets/img/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Mery Coffee Club">
+<meta property="og:title" content="همه‌ی نظرات مشتری‌ها | کافه مری">
+<meta property="og:description" content="همه‌ی نظرات و پیشنهادات تأییدشده‌ی اعضای باشگاه مشتریان مری، به ترتیب بیشترین ابراز علاقه.">
+<meta property="og:image" content="/assets/video/hero-poster.jpg">
+
+<link rel="preload" as="font" type="font/woff2" href="/assets/fonts/vazirmatn-arabic-500-normal.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/fonts/cormorant-latin-500-normal.woff2" crossorigin>
+<link rel="stylesheet" href="/assets/css/styles.css?v=9">
+</head>
+
+<body class="bg-navy-900 text-bone antialiased" data-page="comments">
+
+<a href="#main" data-i18n="skipToContent"
+   class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-[200] focus:rounded-full focus:bg-amber focus:px-5 focus:py-3 focus:text-navy-900 focus:font-medium">
+  رفتن به محتوای اصلی
+</a>
+
+<!-- ══════════════════════════════════ HEADER ══════════════════════════════ -->
+<header id="siteHeader"
+        class="fixed inset-x-0 top-0 z-50 transition-[background-color,backdrop-filter,border-color] duration-300 border-b border-transparent">
+  <div class="shell flex h-[var(--header-h)] items-center justify-between gap-4">
+
+    <!-- hours (desktop) -->
+    <p class="hidden lg:flex items-center gap-2.5 text-[0.8125rem] text-bone/70 min-w-0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-4 shrink-0">
+        <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span data-cfg="hours" class="truncate">هر روز، ۶ صبح تا ۱۱ شب</span>
+    </p>
+
+    <!-- mobile: nav toggle -->
+    <button type="button" id="navToggle" aria-expanded="false" aria-controls="mobileNav"
+            data-i18n-aria="nav.openMenu" aria-label="باز کردن منوی ناوبری"
+            class="lg:hidden inline-flex size-11 items-center justify-center rounded-full border border-bone/25 text-bone cursor-pointer transition-colors hover:border-amber hover:text-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-5">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <!-- logo -->
+    <a href="/" class="shrink-0" aria-label="Mery Coffee Club">
+      <img src="/assets/img/logo-white.png" alt="Mery Coffee Club"
+           width="1297" height="359" class="h-9 w-auto sm:h-10">
+    </a>
+
+    <div class="flex items-center gap-3 lg:gap-5 min-w-0">
+      <p class="hidden lg:flex items-center gap-2.5 text-[0.8125rem] text-bone/70 min-w-0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-4 shrink-0">
+          <path d="M12 21s7-5.686 7-11a7 7 0 1 0-14 0c0 5.314 7 11 7 11Z" stroke-linejoin="round"/>
+          <circle cx="12" cy="10" r="2.5"/>
+        </svg>
+        <span data-cfg="address" class="truncate">رشت، خیابان آذر اندامی، کوچهٔ سینا</span>
+      </p>
+
+      <button type="button" id="langToggle" data-i18n="langToggle" data-i18n-aria="langToggleAria"
+              aria-label="تغییر زبان به انگلیسی"
+              class="inline-flex h-11 items-center rounded-full border border-bone/25 px-4 text-[0.8125rem] font-medium text-bone cursor-pointer transition-colors hover:border-amber hover:text-amber">
+        English
+      </button>
+    </div>
+  </div>
+
+  <!-- mobile nav sheet -->
+  <nav id="mobileNav" hidden
+       class="lg:hidden shell border-t border-bone/10 bg-navy-950/95 backdrop-blur-xl pb-6 pt-2">
+    <ul class="flex flex-col">
+      <li><a href="/#menu"      data-i18n="nav.menu"      class="block border-b border-bone/10 py-4 text-lg text-bone/90 hover:text-amber transition-colors">منو</a></li>
+      <li><a href="/#story"     data-i18n="nav.story"     class="block border-b border-bone/10 py-4 text-lg text-bone/90 hover:text-amber transition-colors">داستان ما</a></li>
+      <li><a href="/#club"      data-i18n="nav.club"      class="block border-b border-bone/10 py-4 text-lg text-bone/90 hover:text-amber transition-colors">باشگاه مشتریان</a></li>
+      <li><a href="/#instagram" data-i18n="nav.instagram" class="block border-b border-bone/10 py-4 text-lg text-bone/90 hover:text-amber transition-colors">اینستاگرام</a></li>
+      <li><a href="/#find"      data-i18n="nav.find"      class="block py-4 text-lg text-bone/90 hover:text-amber transition-colors">ما را بیابید</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="main">
+
+<!-- ═══════════════════════════ ALL REVIEWS & SUGGESTIONS ═══════════════════ -->
+<section class="bg-bone-50 pb-24 pt-[calc(var(--header-h)+2.5rem)] text-navy-900 sm:pb-32 sm:pt-[calc(var(--header-h)+3.5rem)]">
+  <div class="shell">
+    <a href="/" class="reveal inline-block text-sm text-navy-900/55 transition-colors hover:text-oak" data-i18n="commentsPage.backHome">بازگشت به صفحه‌ی اصلی</a>
+
+    <header class="mx-auto mt-6 max-w-2xl text-center">
+      <p class="eyebrow reveal text-oak-ink!" data-i18n="commentsPage.eyebrow">صدای مشتری‌های مری</p>
+      <h1 class="reveal mt-4 text-[clamp(2.25rem,5.5vw,3.75rem)] text-navy-700" data-i18n="commentsPage.title">همه‌ی نظرات</h1>
+      <p class="reveal mt-5 text-navy-900/70" data-i18n="commentsPage.subtitle">
+        همه‌ی نظرات تأییدشده، به ترتیب بیشترین ابراز علاقه — از عزیزانی که تجربه‌شان را با مری به اشتراک گذاشتند.
+      </p>
+      <div class="reveal mt-8">
+        <button type="button" id="reviewOpenModal" class="btn btn-primary" data-i18n="reviews.submitCta">+ ثبت نظر</button>
+      </div>
+    </header>
+
+    <div id="commentsGrid" class="reveal mt-14 grid gap-6 sm:grid-cols-2 xl:grid-cols-3" style="--reveal-delay:80ms">
+      <p class="col-span-full rounded-2xl border border-navy-900/10 bg-bone px-6 py-16 text-center text-navy-900/60" data-i18n="reviews.loading">
+        در حال بارگذاری نظرات…
+      </p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ══════════════════════════════════ FOOTER ══════════════════════════════ -->
+<footer class="border-t border-bone/10 bg-navy-950 py-14">
+  <div class="shell flex flex-col items-center gap-6 text-center">
+    <img src="/assets/img/logo-white.png" alt="Mery Coffee Club" width="1297" height="359" class="h-11 w-auto">
+    <p class="eyebrow" data-i18n="footer.tagline">مکث روزانه‌ی شما</p>
+    <p class="text-sm text-bone/55">
+      © <span id="year">2026</span> <span data-i18n="footer.rights">کافه مری. تمامی حقوق محفوظ است.</span>
+    </p>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════ SUBMIT A REVIEW ═════════════════════════════ -->
+<div id="reviewModal" hidden role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle"
+     class="fixed inset-0 z-[100] flex items-center justify-center bg-navy-950/80 backdrop-blur-sm p-4">
+  <div class="relative max-h-[90svh] w-full max-w-md overflow-y-auto rounded-2xl border border-navy-900/10 bg-bone-50 p-6 text-navy-900 sm:p-8">
+    <button type="button" id="reviewModalClose" data-i18n-aria="reviews.form.closeAria" aria-label="بستن"
+            class="absolute top-4 end-4 inline-flex size-9 items-center justify-center rounded-full text-navy-900/50 cursor-pointer transition-colors hover:text-navy-900">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" class="size-5">
+        <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <h3 id="reviewModalTitle" class="sr-only" data-i18n="reviews.form.stepPhoneTitle">عضو باشگاهید؟</h3>
+
+    <!-- step 1: phone verification -->
+    <div id="reviewStepPhone">
+      <p class="font-display text-xl text-navy-900" data-i18n="reviews.form.stepPhoneTitle" aria-hidden="true">عضو باشگاهید؟</p>
+      <p class="mt-2 text-sm text-navy-900/70" data-i18n="reviews.form.stepPhoneBody">
+        برای ثبت نظر، ابتدا شماره موبایل عضویتتان را وارد کنید.
+      </p>
+      <form id="reviewPhoneForm" novalidate class="mt-5">
+        <label for="reviewPhone" class="mb-1.5 block text-sm font-medium text-navy-900" data-i18n="reviews.form.phoneLabel">شماره موبایل</label>
+        <input id="reviewPhone" name="phone" type="tel" required autocomplete="tel" inputmode="numeric"
+               dir="ltr" placeholder="09123456789" maxlength="11"
+               class="w-full rounded-lg border border-navy-900/20 bg-white px-4 py-3 text-navy-900 transition-colors focus:border-oak">
+        <div id="reviewPhoneMsg" role="status" aria-live="polite" class="mt-3"></div>
+        <button type="submit" id="reviewPhoneSubmit" class="btn btn-primary mt-4 w-full">
+          <span id="reviewPhoneSubmitLabel" data-i18n="reviews.form.continueBtn">ادامه</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- step: not a member -->
+    <div id="reviewStepNotMember" hidden>
+      <p class="font-display text-xl text-navy-900" data-i18n="reviews.form.notMemberTitle">این شماره عضو باشگاه نیست</p>
+      <p class="mt-2 text-sm text-navy-900/70" data-i18n="reviews.form.notMemberBody">
+        برای ثبت نظر باید عضو باشگاه مشتریان مری باشید. عضویت رایگان و سریع است.
+      </p>
+      <a href="/#club" id="reviewJoinLink" class="btn btn-primary mt-5 w-full" data-i18n="reviews.form.joinNowCta">عضویت در باشگاه</a>
+      <button type="button" id="reviewTryAnother"
+              class="btn btn-outline mt-3 w-full border-navy-900/25! text-navy-900! hover:border-oak! hover:text-oak!"
+              data-i18n="reviews.form.tryAnotherPhone">امتحان با شماره‌ی دیگر</button>
+    </div>
+
+    <!-- step 2: review fields -->
+    <div id="reviewStepForm" hidden>
+      <p class="font-display text-xl text-navy-900" data-i18n="reviews.form.stepFormTitle">نظرتان را بنویسید</p>
+      <form id="reviewForm" novalidate class="mt-5">
+        <div class="mb-4">
+          <label for="reviewDisplayName" class="mb-1.5 block text-sm font-medium text-navy-900" data-i18n="reviews.form.displayNameLabel">نام نمایشی</label>
+          <input id="reviewDisplayName" name="displayName" type="text" required maxlength="60"
+                 class="w-full rounded-lg border border-navy-900/20 bg-white px-4 py-3 text-navy-900 transition-colors focus:border-oak">
+        </div>
+        <div class="mb-4">
+          <label for="reviewItemTag" class="mb-1.5 block text-sm font-medium text-navy-900" data-i18n="reviews.form.itemTagLabel">مربوط به کدام مورد از منو؟ (اختیاری)</label>
+          <input id="reviewItemTag" name="itemTag" type="text" list="reviewMenuItems" maxlength="60"
+                 data-i18n-placeholder="reviews.form.itemTagPlaceholder" placeholder="مثلاً لاته یا دلار لیمو"
+                 class="w-full rounded-lg border border-navy-900/20 bg-white px-4 py-3 text-navy-900 transition-colors focus:border-oak">
+          <datalist id="reviewMenuItems"></datalist>
+        </div>
+        <div class="mb-2">
+          <label for="reviewBody" class="mb-1.5 block text-sm font-medium text-navy-900" data-i18n="reviews.form.bodyLabel">متن نظر</label>
+          <textarea id="reviewBody" name="body" required maxlength="600" rows="4"
+                    class="w-full rounded-lg border border-navy-900/20 bg-white px-4 py-3 text-navy-900 transition-colors focus:border-oak"></textarea>
+        </div>
+
+        <!-- honeypot: hidden from sighted users and kept out of the tab order; real visitors never fill this -->
+        <div class="sr-only" aria-hidden="true">
+          <label for="reviewWebsite">Website</label>
+          <input id="reviewWebsite" name="website" type="text" tabindex="-1" autocomplete="off">
+        </div>
+        <input type="hidden" id="reviewFormLoadedAt">
+
+        <div id="reviewFormMsg" role="status" aria-live="polite" class="mt-3"></div>
+        <button type="submit" id="reviewFormSubmit" class="btn btn-primary mt-4 w-full">
+          <span id="reviewFormSubmitLabel" data-i18n="reviews.form.submit">ثبت نظر</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- step: success -->
+    <div id="reviewStepSuccess" hidden>
+      <p class="font-display text-xl text-navy-900" data-i18n="reviews.form.successTitle">متشکریم!</p>
+      <p class="mt-2 text-sm text-navy-900/70" data-i18n="reviews.form.successBody">
+        نظر شما ثبت شد. پس از بررسی، روی سایت نمایش داده می‌شود.
+      </p>
+      <button type="button" id="reviewModalDone" class="btn btn-primary mt-5 w-full" data-i18n="reviews.form.close">بستن</button>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/site-config.js?v=9"></script>
+<script src="/assets/js/i18n.js?v=9"></script>
+<script src="/assets/js/menu-data.js?v=9"></script>
+<script src="/assets/js/gallery-data.js?v=9"></script>
+<script src="/assets/js/app.js?v=9"></script>
+</body>
+</html>

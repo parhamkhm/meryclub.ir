@@ -28,3 +28,6 @@ Thumbs.db
 
 # Contains a GitHub token in plaintext — never commit
 meryclub.ir github repo.txt
+
+# Contains SSH access credentials — never commit
+ssh access for cloud.txt

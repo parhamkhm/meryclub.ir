@@ -54,10 +54,14 @@
     var html = document.documentElement;
     html.setAttribute("lang", t.lang);
     html.setAttribute("dir", t.dir);
-    document.title = t.htmlTitle;
+
+    // pages other than the homepage (e.g. /comments, via <body data-page="…">)
+    // get their own title/description text instead of the homepage's
+    var pageText = (document.body.getAttribute("data-page") === "comments" && t.commentsPage) ? t.commentsPage : t;
+    document.title = pageText.htmlTitle;
 
     var desc = $('meta[name="description"]');
-    if (desc) desc.setAttribute("content", t.metaDesc);
+    if (desc) desc.setAttribute("content", pageText.metaDesc);
 
     $$("[data-i18n]").forEach(function (el) {
       var v = lookup(t, el.getAttribute("data-i18n"));
@@ -477,6 +481,23 @@
     }
   }
 
+  /* Wiring is guarded on #storyViewer's presence, unlike the rest of this
+     block, because init() calls this before any other page content loads —
+     a page without the story-viewer markup (e.g. /comments) must not crash
+     init() and take every other feature on the page down with it. */
+  function wireViewer() {
+    viewer        = $("#storyViewer");
+    viewerImg     = $("#viewerImg");
+    viewerCaption = $("#viewerCaption");
+    viewerStatus  = $("#viewerStatus");
+    if (!viewer) return;
+
+    $("#viewerClose").addEventListener("click", closeViewer);
+    $("#viewerPrev").addEventListener("click", function () { stepViewer(-1); });
+    $("#viewerNext").addEventListener("click", function () { stepViewer(1); });
+    viewer.addEventListener("click", function (e) { if (e.target === viewer) closeViewer(); });
+  }
+
   /* -- reveal on scroll ---------------------------------------------------- */
 
   var revealObserver = null;
@@ -541,8 +562,12 @@
 
   function wireChrome() {
     var header = $("#siteHeader");
+    // The header starts transparent so it blends into the hero video, then
+    // solidifies on scroll. Pages with no hero (e.g. /comments) have nothing
+    // dark for a transparent header to blend into, so keep it solid always.
+    var hasHero = !!$("#top");
     var onScroll = function () {
-      var solid = window.scrollY > 40;
+      var solid = !hasHero || window.scrollY > 40;
       header.classList.toggle("bg-navy-950/85", solid);
       header.classList.toggle("backdrop-blur-xl", solid);
       header.classList.toggle("border-bone/10", solid);
@@ -729,9 +754,165 @@
     langHooks.push(renderMessage);
   }
 
-  /* -- reviews & suggestions ------------------------------------------------ */
+  /* -- reviews & suggestions: shared helpers ---------------------------------
+     Shared by the homepage carousel (wireReviewsCarousel), the /comments full
+     grid (wireCommentsGrid), and the submission modal (wireReviewSubmitModal).
+     Any one of the three can be absent depending on which page is loaded, so
+     nothing here assumes the others are wired. */
 
-  function wireReviews() {
+  var HEART_OUTLINE =
+    '<svg class="size-4 fill-none stroke-current" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path d="M12 21s-7.5-4.6-10-9.1C.4 8.6 2 5 5.6 5c2 0 3.4 1 4.4 2.4C11 6 12.4 5 14.4 5 18 5 19.6 8.6 22 11.9 19.5 16.4 12 21 12 21z"/></svg>';
+  var HEART_FILLED =
+    '<svg class="size-4 fill-amber" viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path d="M12 21s-7.5-4.6-10-9.1C.4 8.6 2 5 5.6 5c2 0 3.4 1 4.4 2.4C11 6 12.4 5 14.4 5 18 5 19.6 8.6 22 11.9 19.5 16.4 12 21 12 21z"/></svg>';
+
+  /* re-fetch hooks for whichever review view(s) are wired on this page, run
+     after a successful submission from the shared modal */
+  var reviewSubmittedHooks = [];
+
+  function getFingerprint() {
+    var KEY = "mery.reviewFingerprint";
+    try {
+      var v = localStorage.getItem(KEY);
+      if (v) return v;
+      v = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ("fp-" + Date.now() + "-" + Math.random().toString(36).slice(2));
+      localStorage.setItem(KEY, v);
+      return v;
+    } catch (e) {
+      return "fp-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    }
+  }
+
+  var REACTED_KEY = "mery.reactedReviewIds";
+  function loadReactedSet() {
+    try {
+      var raw = localStorage.getItem(REACTED_KEY);
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch (e) { return new Set(); }
+  }
+  function saveReactedSet() {
+    try { localStorage.setItem(REACTED_KEY, JSON.stringify(Array.from(reactedSet))); } catch (e) { /* private mode */ }
+  }
+  var reactedSet = loadReactedSet();
+
+  function formatRelative(s) {
+    // SQLite's datetime('now') yields "YYYY-MM-DD HH:MM:SS" (UTC, no offset marker)
+    var d = new Date(String(s).replace(" ", "T") + "Z");
+    var diffDays = Math.floor((Date.now() - d.getTime()) / 86400000);
+    if (diffDays <= 0) return t.reviews.today;
+    if (diffDays === 1) return t.reviews.yesterday;
+    return t.reviews.daysAgo(digits(diffDays));
+  }
+
+  /* review text is user-submitted — always set via textContent, never innerHTML */
+  function buildReviewCard(review, rank) {
+    var card = document.createElement("div");
+    card.className = "reviews-card";
+
+    var top = document.createElement("div");
+    top.className = "mb-4 flex items-start justify-between gap-4";
+
+    var quote = document.createElement("span");
+    quote.setAttribute("aria-hidden", "true");
+    quote.innerHTML = '<svg class="h-[26px] w-9 fill-amber/90" viewBox="0 0 48 36"><path d="M0 36V20.7C0 9.3 6.9 1.7 18.4 0l1.8 5.4C13 7 9.8 11 9.8 16.6h9.6V36H0zm27.6 0V20.7C27.6 9.3 34.5 1.7 46 0l1.8 5.4c-7.2 1.6-10.4 5.6-10.4 11.2h9.6V36H27.6z"/></svg>';
+    top.appendChild(quote);
+
+    var badge = document.createElement("span");
+    badge.className = "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-amber-soft px-3 py-1.5 text-xs font-semibold text-navy-900";
+    badge.innerHTML = '<svg class="size-3 fill-navy-900" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.6 7.1.7-5.4 4.8 1.6 7-6.2-3.7L5.8 21l1.6-7-5.4-4.8 7.1-.7z"/></svg>';
+    var badgeText = document.createElement("span");
+    badgeText.textContent = t.reviews.rankBadge(digits(rank));
+    badge.appendChild(badgeText);
+    top.appendChild(badge);
+    card.appendChild(top);
+
+    var body = document.createElement("p");
+    body.className = "mb-7 line-clamp-6 font-display text-[clamp(1.15rem,2.4vw,1.4rem)] leading-snug text-bone-50";
+    body.textContent = review.body;
+    card.appendChild(body);
+
+    var bottom = document.createElement("div");
+    bottom.className = "flex flex-wrap items-center justify-between gap-4 border-t border-bone/15 pt-5";
+
+    var person = document.createElement("div");
+    person.className = "flex items-center gap-3";
+
+    var avatar = document.createElement("div");
+    avatar.className = "flex size-11 shrink-0 items-center justify-center rounded-full bg-amber-soft text-base font-bold text-navy-900";
+    avatar.textContent = (review.display_name || "").trim().charAt(0) || "?";
+    person.appendChild(avatar);
+
+    var info = document.createElement("div");
+    var nameEl = document.createElement("p");
+    nameEl.className = "text-sm font-semibold text-bone-50";
+    nameEl.textContent = review.display_name;
+    info.appendChild(nameEl);
+
+    var metaEl = document.createElement("p");
+    metaEl.className = "mt-0.5 text-xs text-bone-300";
+    var metaParts = [formatRelative(review.created_at), t.reviews.memberLabel];
+    if (review.item_tag) metaParts.push(review.item_tag);
+    metaEl.textContent = metaParts.join(" · ");
+    info.appendChild(metaEl);
+
+    person.appendChild(info);
+    bottom.appendChild(person);
+
+    var reacted = reactedSet.has(review.id);
+    var reactBtn = document.createElement("button");
+    reactBtn.type = "button";
+    reactBtn.className = "reaction-btn inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2 py-1 text-sm tabular-nums text-bone-300 transition-colors hover:text-amber disabled:cursor-default disabled:hover:text-bone-300";
+    reactBtn.setAttribute("data-react-id", String(review.id));
+    reactBtn.setAttribute("aria-label", t.reviews.reactAria);
+    reactBtn.setAttribute("aria-pressed", reacted ? "true" : "false");
+    if (reacted) reactBtn.disabled = true;
+
+    var heartWrap = document.createElement("span");
+    heartWrap.className = "reaction-heart inline-flex";
+    heartWrap.innerHTML = reacted ? HEART_FILLED : HEART_OUTLINE;
+    reactBtn.appendChild(heartWrap);
+
+    var countEl = document.createElement("span");
+    countEl.className = "reaction-count";
+    countEl.textContent = digits(review.reaction_count);
+    reactBtn.appendChild(countEl);
+
+    bottom.appendChild(reactBtn);
+    card.appendChild(bottom);
+
+    return card;
+  }
+
+  /* shared POST handler for the heart/reaction button, used by both the
+     carousel and the /comments grid — same endpoint, same counter either way */
+  function sendReaction(id, btn, onUpdated) {
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    fetch("/api/reviews/" + id + "/react", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ fingerprint: getFingerprint() }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok) { btn.disabled = false; return; }
+        reactedSet.add(id);
+        saveReactedSet();
+        btn.setAttribute("aria-pressed", "true");
+        var countEl = btn.querySelector(".reaction-count");
+        if (countEl) countEl.textContent = digits(data.reactionCount);
+        var heartWrap = btn.querySelector(".reaction-heart");
+        if (heartWrap) heartWrap.innerHTML = HEART_FILLED;
+        if (onUpdated) onUpdated(data.reactionCount);
+      })
+      .catch(function () { btn.disabled = false; });
+  }
+
+  /* -- reviews & suggestions: homepage carousel ------------------------------ */
+
+  function wireReviewsCarousel() {
     var stageEl = $("#reviewsStage");
     if (!stageEl) return;
 
@@ -739,40 +920,6 @@
     var dotsEl = $("#reviewsDots");
     var prevBtn = $("#reviewsPrev");
     var nextBtn = $("#reviewsNext");
-    var openModalBtn = $("#reviewOpenModal");
-
-    var modal = $("#reviewModal");
-    var modalClose = $("#reviewModalClose");
-    var steps = {
-      phone: $("#reviewStepPhone"),
-      notMember: $("#reviewStepNotMember"),
-      form: $("#reviewStepForm"),
-      success: $("#reviewStepSuccess"),
-    };
-    var phoneForm = $("#reviewPhoneForm");
-    var phoneInput = $("#reviewPhone");
-    var phoneSubmitBtn = $("#reviewPhoneSubmit");
-    var phoneSubmitLabel = $("#reviewPhoneSubmitLabel");
-    var phoneMsg = $("#reviewPhoneMsg");
-    var tryAnotherBtn = $("#reviewTryAnother");
-    var joinLink = $("#reviewJoinLink");
-    var reviewForm = $("#reviewForm");
-    var displayNameInput = $("#reviewDisplayName");
-    var itemTagInput = $("#reviewItemTag");
-    var bodyInput = $("#reviewBody");
-    var websiteInput = $("#reviewWebsite");
-    var formLoadedAtInput = $("#reviewFormLoadedAt");
-    var formMsg = $("#reviewFormMsg");
-    var formSubmitBtn = $("#reviewFormSubmit");
-    var formSubmitLabel = $("#reviewFormSubmitLabel");
-    var doneBtn = $("#reviewModalDone");
-
-    var HEART_OUTLINE =
-      '<svg class="size-4 fill-none stroke-current" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true">' +
-      '<path d="M12 21s-7.5-4.6-10-9.1C.4 8.6 2 5 5.6 5c2 0 3.4 1 4.4 2.4C11 6 12.4 5 14.4 5 18 5 19.6 8.6 22 11.9 19.5 16.4 12 21 12 21z"/></svg>';
-    var HEART_FILLED =
-      '<svg class="size-4 fill-amber" viewBox="0 0 24 24" aria-hidden="true">' +
-      '<path d="M12 21s-7.5-4.6-10-9.1C.4 8.6 2 5 5.6 5c2 0 3.4 1 4.4 2.4C11 6 12.4 5 14.4 5 18 5 19.6 8.6 22 11.9 19.5 16.4 12 21 12 21z"/></svg>';
 
     var reviews = [];
     var current = 0;
@@ -780,125 +927,6 @@
     var timer = null;
     var cardEl = null;
     var stageState = "loading";
-    var verifiedPhone = null;
-    var lastFocusBeforeModal = null;
-
-    /* -- local guards: fingerprint + already-reacted set -------------------- */
-
-    function getFingerprint() {
-      var KEY = "mery.reviewFingerprint";
-      try {
-        var v = localStorage.getItem(KEY);
-        if (v) return v;
-        v = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ("fp-" + Date.now() + "-" + Math.random().toString(36).slice(2));
-        localStorage.setItem(KEY, v);
-        return v;
-      } catch (e) {
-        return "fp-" + Date.now() + "-" + Math.random().toString(36).slice(2);
-      }
-    }
-
-    var REACTED_KEY = "mery.reactedReviewIds";
-    function loadReactedSet() {
-      try {
-        var raw = localStorage.getItem(REACTED_KEY);
-        return new Set(raw ? JSON.parse(raw) : []);
-      } catch (e) { return new Set(); }
-    }
-    function saveReactedSet() {
-      try { localStorage.setItem(REACTED_KEY, JSON.stringify(Array.from(reactedSet))); } catch (e) { /* private mode */ }
-    }
-    var reactedSet = loadReactedSet();
-
-    /* -- date + card rendering ------------------------------------------- */
-
-    function formatRelative(s) {
-      // SQLite's datetime('now') yields "YYYY-MM-DD HH:MM:SS" (UTC, no offset marker)
-      var d = new Date(String(s).replace(" ", "T") + "Z");
-      var diffDays = Math.floor((Date.now() - d.getTime()) / 86400000);
-      if (diffDays <= 0) return t.reviews.today;
-      if (diffDays === 1) return t.reviews.yesterday;
-      return t.reviews.daysAgo(digits(diffDays));
-    }
-
-    /* review text is user-submitted — always set via textContent, never innerHTML */
-    function buildReviewCard(review, rank) {
-      var card = document.createElement("div");
-      card.className = "reviews-card";
-
-      var top = document.createElement("div");
-      top.className = "mb-4 flex items-start justify-between gap-4";
-
-      var quote = document.createElement("span");
-      quote.setAttribute("aria-hidden", "true");
-      quote.innerHTML = '<svg class="h-[26px] w-9 fill-amber/90" viewBox="0 0 48 36"><path d="M0 36V20.7C0 9.3 6.9 1.7 18.4 0l1.8 5.4C13 7 9.8 11 9.8 16.6h9.6V36H0zm27.6 0V20.7C27.6 9.3 34.5 1.7 46 0l1.8 5.4c-7.2 1.6-10.4 5.6-10.4 11.2h9.6V36H27.6z"/></svg>';
-      top.appendChild(quote);
-
-      var badge = document.createElement("span");
-      badge.className = "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-amber-soft px-3 py-1.5 text-xs font-semibold text-navy-900";
-      badge.innerHTML = '<svg class="size-3 fill-navy-900" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.6 7.1.7-5.4 4.8 1.6 7-6.2-3.7L5.8 21l1.6-7-5.4-4.8 7.1-.7z"/></svg>';
-      var badgeText = document.createElement("span");
-      badgeText.textContent = t.reviews.rankBadge(digits(rank));
-      badge.appendChild(badgeText);
-      top.appendChild(badge);
-      card.appendChild(top);
-
-      var body = document.createElement("p");
-      body.className = "mb-7 line-clamp-6 font-display text-[clamp(1.15rem,2.4vw,1.4rem)] leading-snug text-bone-50";
-      body.textContent = review.body;
-      card.appendChild(body);
-
-      var bottom = document.createElement("div");
-      bottom.className = "flex flex-wrap items-center justify-between gap-4 border-t border-bone/15 pt-5";
-
-      var person = document.createElement("div");
-      person.className = "flex items-center gap-3";
-
-      var avatar = document.createElement("div");
-      avatar.className = "flex size-11 shrink-0 items-center justify-center rounded-full bg-amber-soft text-base font-bold text-navy-900";
-      avatar.textContent = (review.display_name || "").trim().charAt(0) || "?";
-      person.appendChild(avatar);
-
-      var info = document.createElement("div");
-      var nameEl = document.createElement("p");
-      nameEl.className = "text-sm font-semibold text-bone-50";
-      nameEl.textContent = review.display_name;
-      info.appendChild(nameEl);
-
-      var metaEl = document.createElement("p");
-      metaEl.className = "mt-0.5 text-xs text-bone-300";
-      var metaParts = [formatRelative(review.created_at), t.reviews.memberLabel];
-      if (review.item_tag) metaParts.push(review.item_tag);
-      metaEl.textContent = metaParts.join(" · ");
-      info.appendChild(metaEl);
-
-      person.appendChild(info);
-      bottom.appendChild(person);
-
-      var reacted = reactedSet.has(review.id);
-      var reactBtn = document.createElement("button");
-      reactBtn.type = "button";
-      reactBtn.className = "reaction-btn inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2 py-1 text-sm tabular-nums text-bone-300 transition-colors hover:text-amber disabled:cursor-default disabled:hover:text-bone-300";
-      reactBtn.setAttribute("data-react-id", String(review.id));
-      reactBtn.setAttribute("aria-label", t.reviews.reactAria);
-      reactBtn.setAttribute("aria-pressed", reacted ? "true" : "false");
-      if (reacted) reactBtn.disabled = true;
-
-      var heartWrap = document.createElement("span");
-      heartWrap.className = "reaction-heart inline-flex";
-      heartWrap.innerHTML = reacted ? HEART_FILLED : HEART_OUTLINE;
-      reactBtn.appendChild(heartWrap);
-
-      var countEl = document.createElement("span");
-      countEl.className = "reaction-count";
-      countEl.textContent = digits(review.reaction_count);
-      reactBtn.appendChild(countEl);
-
-      bottom.appendChild(reactBtn);
-      card.appendChild(bottom);
-
-      return card;
-    }
 
     function renderDots() {
       dotsEl.innerHTML = "";
@@ -1009,27 +1037,10 @@
       var btn = e.target.closest ? e.target.closest("[data-react-id]") : null;
       if (!btn || btn.disabled) return;
       var id = Number(btn.getAttribute("data-react-id"));
-      btn.disabled = true;
-      fetch("/api/reviews/" + id + "/react", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ fingerprint: getFingerprint() }),
-      })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          if (!data.ok) { btn.disabled = false; return; }
-          reactedSet.add(id);
-          saveReactedSet();
-          btn.setAttribute("aria-pressed", "true");
-          var countEl = btn.querySelector(".reaction-count");
-          if (countEl) countEl.textContent = digits(data.reactionCount);
-          var heartWrap = btn.querySelector(".reaction-heart");
-          if (heartWrap) heartWrap.innerHTML = HEART_FILLED;
-          var reviewData = reviews.filter(function (r) { return r.id === id; })[0];
-          if (reviewData) reviewData.reaction_count = data.reactionCount;
-        })
-        .catch(function () { btn.disabled = false; });
+      sendReaction(id, btn, function (count) {
+        var reviewData = reviews.filter(function (r) { return r.id === id; })[0];
+        if (reviewData) reviewData.reaction_count = count;
+      });
     });
 
     function fetchTop8() {
@@ -1055,11 +1066,108 @@
       }
     });
 
+    reviewSubmittedHooks.push(fetchTop8); // a fresh submission doesn't crack the top 8 (12h cache), but keep data current
+
     fetchTop8();
+  }
 
-    /* -- submission modal ---------------------------------------------------- */
+  /* -- reviews & suggestions: full /comments grid ---------------------------- */
 
+  function wireCommentsGrid() {
+    var gridEl = $("#commentsGrid");
+    if (!gridEl) return;
+
+    var reviews = [];
+    var gridState = "loading";
+
+    function renderStatus(key) {
+      gridEl.innerHTML = "";
+      var p = document.createElement("p");
+      p.className = "col-span-full rounded-2xl border border-navy-900/10 bg-bone px-6 py-16 text-center text-navy-900/60";
+      p.textContent = t.reviews[key];
+      gridEl.appendChild(p);
+    }
+
+    function renderGrid() {
+      if (!reviews.length) { gridState = "empty"; renderStatus("empty"); return; }
+      gridState = "ready";
+      gridEl.innerHTML = "";
+      reviews.forEach(function (review, i) {
+        gridEl.appendChild(buildReviewCard(review, i + 1));
+      });
+    }
+
+    gridEl.addEventListener("click", function (e) {
+      var btn = e.target.closest ? e.target.closest("[data-react-id]") : null;
+      if (!btn || btn.disabled) return;
+      var id = Number(btn.getAttribute("data-react-id"));
+      sendReaction(id, btn, function (count) {
+        var reviewData = reviews.filter(function (r) { return r.id === id; })[0];
+        if (reviewData) reviewData.reaction_count = count;
+      });
+    });
+
+    function fetchAll() {
+      fetch("/api/reviews", { credentials: "same-origin" })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) throw new Error("bad response");
+          reviews = data.reviews || [];
+          renderGrid();
+        })
+        .catch(function () { gridState = "loadError"; renderStatus("loadError"); });
+    }
+
+    langHooks.push(function () {
+      if (gridState === "ready" && reviews.length) {
+        renderGrid();
+      } else if (gridState !== "loading") {
+        renderStatus(gridState);
+      }
+    });
+
+    reviewSubmittedHooks.push(fetchAll);
+
+    fetchAll();
+  }
+
+  /* -- reviews & suggestions: submission modal --------------------------------
+     Shared by the homepage carousel and the /comments grid — both pages ship
+     the same #reviewModal markup and open it via the same #reviewOpenModal
+     button, so this wires whichever one of the two pages happens to be loaded. */
+
+  function wireReviewSubmitModal() {
+    var modal = $("#reviewModal");
     if (!modal) return;
+
+    var openModalBtn = $("#reviewOpenModal");
+    var modalClose = $("#reviewModalClose");
+    var steps = {
+      phone: $("#reviewStepPhone"),
+      notMember: $("#reviewStepNotMember"),
+      form: $("#reviewStepForm"),
+      success: $("#reviewStepSuccess"),
+    };
+    var phoneForm = $("#reviewPhoneForm");
+    var phoneInput = $("#reviewPhone");
+    var phoneSubmitBtn = $("#reviewPhoneSubmit");
+    var phoneSubmitLabel = $("#reviewPhoneSubmitLabel");
+    var phoneMsg = $("#reviewPhoneMsg");
+    var tryAnotherBtn = $("#reviewTryAnother");
+    var joinLink = $("#reviewJoinLink");
+    var reviewForm = $("#reviewForm");
+    var displayNameInput = $("#reviewDisplayName");
+    var itemTagInput = $("#reviewItemTag");
+    var bodyInput = $("#reviewBody");
+    var websiteInput = $("#reviewWebsite");
+    var formLoadedAtInput = $("#reviewFormLoadedAt");
+    var formMsg = $("#reviewFormMsg");
+    var formSubmitBtn = $("#reviewFormSubmit");
+    var formSubmitLabel = $("#reviewFormSubmitLabel");
+    var doneBtn = $("#reviewModalDone");
+
+    var verifiedPhone = null;
+    var lastFocusBeforeModal = null;
 
     var modalTitle = $("#reviewModalTitle");
     function showStep(name) {
@@ -1199,7 +1307,7 @@
         .then(function (res) {
           if (res.data.ok) {
             showStep("success");
-            fetchTop8(); // a fresh submission doesn't crack the top 8 (12h cache), but keep data current
+            reviewSubmittedHooks.forEach(function (fn) { fn(); });
           } else if (res.data.code === "not_member") {
             showStep("notMember");
           } else {
@@ -1217,16 +1325,6 @@
   /* -- boot ---------------------------------------------------------------- */
 
   function init() {
-    viewer        = $("#storyViewer");
-    viewerImg     = $("#viewerImg");
-    viewerCaption = $("#viewerCaption");
-    viewerStatus  = $("#viewerStatus");
-
-    $("#viewerClose").addEventListener("click", closeViewer);
-    $("#viewerPrev").addEventListener("click", function () { stepViewer(-1); });
-    $("#viewerNext").addEventListener("click", function () { stepViewer(1); });
-    viewer.addEventListener("click", function (e) { if (e.target === viewer) closeViewer(); });
-
     var saved = null;
     try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) { /* ignore */ }
 
@@ -1241,8 +1339,11 @@
     safe(function () { applyLanguage(saved === "en" ? "en" : "fa"); });
     safe(wireChrome);
     safe(wireVideo);
+    safe(wireViewer);
     safe(wireClub);
-    safe(wireReviews);
+    safe(wireReviewsCarousel);
+    safe(wireReviewSubmitModal);
+    safe(wireCommentsGrid);
     safe(wireMenuSearch);
     safe(function () { observeReveals(document); });
   }

@@ -233,10 +233,12 @@ app.get("/api/reviews/top8", (req, res) => {
   res.json({ ok: true, reviews: ordered });
 });
 
-// Full approved pool — used by prompt 2's /comments page.
+// Full approved pool for the /comments page — sorted by reaction count like
+// the homepage top 8, but computed live on every request rather than cached,
+// since there's no display limit here for a stale ranking to protect against.
 app.get("/api/reviews", (req, res) => {
   const rows = db.prepare(
-    "SELECT id, display_name, body, item_tag, reaction_count, created_at FROM reviews WHERE status = 'approved' ORDER BY created_at DESC LIMIT 500"
+    "SELECT id, display_name, body, item_tag, reaction_count, created_at FROM reviews WHERE status = 'approved' ORDER BY reaction_count DESC, created_at DESC LIMIT 500"
   ).all();
   res.json({ ok: true, reviews: rows });
 });

@@ -11,17 +11,19 @@ with an English toggle, right-to-left throughout.
 
 The site is two parts that deploy separately:
 
-1. **The static site** (`index.html` + `assets/`) — hero, full menu with search and
-   category tabs, café story, Instagram gallery, and a "Find Us" section. No
-   build step needed to view it; Tailwind is pre-compiled into `assets/css/styles.css`.
-2. **A small backend** (`server/`) — powers the Customer Club: a real signup
-   form on the site, a password-protected admin panel to view members and
-   redeem the welcome perk, and configurable loyalty settings (no code changes
-   needed to change the welcome offer). Node.js + Express + SQLite, no external
-   database service required.
+1. **The static site** (`index.html` + `comments/index.html` + `assets/`) — hero,
+   full menu with search and category tabs, café story, reviews & suggestions,
+   an Instagram gallery, and a "Find Us" section, plus a dedicated `/comments`
+   page listing every approved review. No build step needed to view it;
+   Tailwind is pre-compiled into `assets/css/styles.css`.
+2. **A small backend** (`server/`) — powers the Customer Club (signup form,
+   password-protected admin panel, configurable loyalty settings) and the
+   Reviews & Suggestions feature (submission, moderation, shared reaction
+   counter). Node.js + Express + SQLite, no external database service required.
 
 ```
-index.html              the whole site (single page)
+index.html              the homepage (single page)
+comments/index.html     "/comments" — every approved review, ranked by reactions
 assets/
   css/                  tailwind-input.css (source) → styles.css (compiled, what ships)
   js/                   i18n.js, menu-data.js, gallery-data.js, site-config.js, app.js
@@ -144,10 +146,57 @@ No new moving parts — it reuses the same backend, port, and deploy steps above
   `reactions`, `homepage_top8`) against the existing `club.db` — no manual
   migration step, no new env vars, no new npm dependencies.
 - Copy the updated `index.html` and `assets/` to `/var/www/meryclub.ir/` as
-  usual. `index.html`'s asset query strings were bumped to `?v=7`.
+  usual. `index.html`'s asset query strings were bumped to `?v=9`.
 - The homepage's top-8 ranking is cached for 12h and computed on demand
   (first request after the cache goes stale recomputes it) — no cron job to
   set up.
+
+### Deploying the `/comments` page
+
+`/comments` is a static page (`comments/index.html`), served by nginx exactly
+like `index.html` — it is **not** proxied to the Node backend. It fetches its
+review data client-side from the same `/api/reviews` endpoint the backend
+already exposes, so there's no new backend route. Two things changed on the
+backend side even so:
+
+- `server.js`'s `GET /api/reviews` now sorts by `reaction_count DESC` (it
+  previously sorted by `created_at DESC` — that endpoint was unused by any
+  frontend until now, so this is a safe change). Copy the updated `server.js`
+  into `/opt/meryclub-api/` and `systemctl restart meryclub-api`.
+- `assets/js/app.js` and `assets/js/i18n.js` changed (the reviews carousel,
+  submission modal, and reaction logic were split into shared pieces so both
+  `index.html` and `comments/index.html` can reuse them — see the comments at
+  the top of the "reviews & suggestions" section in `app.js`). These are
+  static files, deployed with the rest of `assets/` below, not part of the
+  backend.
+
+**Files to upload:**
+
+- `comments/index.html` → new file at `/var/www/meryclub.ir/comments/index.html`.
+- `index.html`, `assets/` → `/var/www/meryclub.ir/` as usual (asset query
+  strings bumped to `?v=9`; the CSS was rebuilt with `npm run build` to
+  include the new page's classes).
+- `server/server.js` → `/opt/meryclub-api/`, then `systemctl restart meryclub-api`.
+
+**nginx:** add a route so `GET /comments` resolves to the new file, with
+`/comments/` redirecting to it (canonical URL is `/comments`, no trailing
+slash, matching the `href="/comments"` link already on the homepage). Add
+this alongside the existing `location /api` and `location /club-admin`
+blocks, inside the `server {}` block whose `root` is `/var/www/meryclub.ir`:
+
+```nginx
+location = /comments/ {
+    return 301 /comments;
+}
+
+location = /comments {
+    try_files /comments/index.html =404;
+}
+```
+
+Everything else continues being served as static files as it is today —
+no other nginx changes needed. There's no `sitemap.xml` or `robots.txt` in
+this repo yet, so there was nothing else to update for the new route.
 
 ## Roadmap / not built yet
 
@@ -157,6 +206,5 @@ redeem rewards. Not yet built: a punch-card/points loyalty system and SMS
 campaigns — both need a staff-facing order-confirmation flow and (for SMS) a
 paid Iranian SMS provider account, neither of which exist yet.
 
-The Reviews & Suggestions feature (homepage section + backend) is built;
-the dedicated `/comments` page and its routing are a separate, not-yet-built
-piece (tracked outside this repo's prompts as its own task).
+The Reviews & Suggestions feature (homepage section + backend, and the
+dedicated `/comments` page with its own nginx route) is built.

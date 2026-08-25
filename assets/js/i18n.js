@@ -96,7 +96,7 @@ const MERY_I18N = {
       eyebrow: "صدای مشتری‌های مری",
       title: "نظرات و پیشنهادات",
       subtitle:
-        "این نظرات را اعضای باشگاه مشتریان مری نوشته‌اند. پرطرفدارترین‌ها — بر اساس بیشترین ری‌اکشن — همین‌جا نمایش داده می‌شن و ترتیبشون هر ۱۲ ساعت به‌روز می‌شه.",
+        "مری‌کلاب با همراهی و حضور شما پیشرفت میکنه ؛ نظرات، پیشنهادات و ایده‌های ارزشمندت رو با مری به اشتراک بذار",
       rankBadge: (n) => `پرطرفدار #${n}`,
       memberLabel: "عضو باشگاه مشتریان",
       loading: "در حال بارگذاری نظرات…",
@@ -143,6 +143,15 @@ const MERY_I18N = {
           generic: "مشکلی پیش آمد. لطفاً دوباره امتحان کنید.",
         },
       },
+    },
+
+    commentsPage: {
+      htmlTitle: "همه‌ی نظرات مشتری‌ها | کافه مری",
+      metaDesc: "همه‌ی نظرات و پیشنهادات تأییدشده‌ی اعضای باشگاه مشتریان مری، به ترتیب بیشترین ابراز علاقه.",
+      eyebrow: "صدای مشتری‌های مری",
+      title: "همه‌ی نظرات",
+      subtitle: "همه‌ی نظرات تأییدشده، به ترتیب بیشترین ابراز علاقه — از عزیزانی که تجربه‌شان را با مری به اشتراک گذاشتند.",
+      backHome: "بازگشت به صفحه‌ی اصلی",
     },
 
     ig: {
@@ -319,6 +328,15 @@ const MERY_I18N = {
           generic: "Something went wrong. Please try again.",
         },
       },
+    },
+
+    commentsPage: {
+      htmlTitle: "All Reviews | Mery Coffee Club",
+      metaDesc: "Every approved review and suggestion from Mery customer club members, ranked by reactions.",
+      eyebrow: "From our customers",
+      title: "All Reviews",
+      subtitle: "Every approved review, ranked by reactions — from the people who shared their Mery experience.",
+      backHome: "Back to the homepage",
     },
 
     ig: {
