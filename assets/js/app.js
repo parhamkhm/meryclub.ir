@@ -34,9 +34,12 @@
 
   function formatPrice(value) {
     if (value == null) return null;
-    var n = value * (MERY_CURRENCY.multiplier || 1);
-    var grouped = n.toLocaleString("en-US");
-    return digits(grouped) + " " + (lang === "fa" ? MERY_CURRENCY.fa : MERY_CURRENCY.en);
+    // an array means the item comes in more than one size, e.g. [150, 170]
+    var amounts = (Array.isArray(value) ? value : [value]).map(function (v) {
+      var n = v * (MERY_CURRENCY.multiplier || 1);
+      return digits(n.toLocaleString("en-US"));
+    });
+    return amounts.join(" / ") + " " + (lang === "fa" ? MERY_CURRENCY.fa : MERY_CURRENCY.en);
   }
 
   function hasAnyPrice() {
@@ -198,9 +201,10 @@
     if (showPrices) {
       var price = document.createElement("p");
       price.className = "tnum mt-1.5 text-sm text-navy-700";
-      var p = formatPrice(item.price);
-      if (p) {
-        price.textContent = p;
+      if (item.price === "variable") {
+        price.textContent = t.menu.priceVariable;
+      } else if (item.price != null) {
+        price.textContent = formatPrice(item.price);
       } else {
         price.textContent = t.menu.priceSoon;
         price.className += " text-navy-900/35";
