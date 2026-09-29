@@ -120,6 +120,13 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ## Deployment
 
+**Dockerized deploys:** see [DOCKER.md](DOCKER.md) — the site now has a
+`docker-compose.yml` (nginx + Node/SQLite backend, one command to
+build/update) as the intended path going forward. The bare-metal process
+below is what production still runs until the Docker cutover is confirmed
+and completed; keep it accurate until then, and remove/replace it once the
+switch is final.
+
 There's no CI/CD pipeline yet — updates are pushed manually to the VPS:
 
 - **Static files** (`index.html`, `assets/`) → `/var/www/meryclub.ir/`, served

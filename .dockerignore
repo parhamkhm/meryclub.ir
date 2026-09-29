@@ -1,0 +1,30 @@
+# Keep the build context small and fast — the frontend Dockerfile only
+# COPYs index.html, comments/, and assets/ anyway, but without this file
+# Docker still uploads everything below to the daemon first.
+.git
+.claude
+node_modules
+server/
+
+# Large reference/source material, never served
+ai generated pics/
+pics/
+inspration/
+mery-coffee-menu-photos/
+menu+.jpg
+need to be fixed/
+
+# Personal working files / planning notes / secrets, not part of the site
+admin login.txt
+notes.txt
+menuphotoprompts.md
+menu-photo-prompts.md
+meryclub.ir github repo.txt
+ssh access for cloud.txt
+deploy-comments-instructions.txt
+*.md
+!README.md
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db

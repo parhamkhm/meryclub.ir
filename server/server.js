@@ -449,6 +449,13 @@ if (process.env.MERY_SERVE_ROOT) {
 }
 
 const PORT = process.env.PORT || 3210;
-app.listen(PORT, "127.0.0.1", () => {
-  console.log(`meryclub-api listening on 127.0.0.1:${PORT}`);
+// Bare-metal/systemd deploys keep the old loopback-only default (nginx and
+// the app share the host, so 127.0.0.1 is correct and more restrictive).
+// Dockerized deploys set HOST=0.0.0.0 so the frontend container — a
+// separate network namespace — can reach this service by its container name;
+// the backend container still isn't reachable from outside Docker since
+// docker-compose never publishes its port to the host.
+const HOST = process.env.HOST || "127.0.0.1";
+app.listen(PORT, HOST, () => {
+  console.log(`meryclub-api listening on ${HOST}:${PORT}`);
 });

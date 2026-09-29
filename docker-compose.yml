@@ -1,0 +1,42 @@
+services:
+  backend:
+    build:
+      context: ./server
+    container_name: meryclub-backend
+    restart: unless-stopped
+    environment:
+      PORT: "3210"
+      HOST: "0.0.0.0" # safe: this container has no ports: published to the host
+    volumes:
+      # Secrets live only on the host, never in the image or a git repo.
+      - ./server/config.json:/app/config.json:ro
+      # The SQLite file survives image rebuilds/container recreation.
+      - meryclub-db:/app/data
+    networks:
+      - meryclub-internal
+    # Deliberately no `ports:` — reachable only from other containers on
+    # meryclub-internal, e.g. by the frontend as http://backend:3210.
+
+  frontend:
+    build:
+      context: .
+    container_name: meryclub-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Host-side certbot keeps owning renewal; the container only reads.
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+    networks:
+      - meryclub-internal
+
+networks:
+  meryclub-internal:
+    driver: bridge
+
+volumes:
+  meryclub-db:
