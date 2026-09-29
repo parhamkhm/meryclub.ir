@@ -17,6 +17,41 @@ Files involved: [Dockerfile](Dockerfile) (frontend), [server/Dockerfile](server/
 [docker-compose.yml](docker-compose.yml), [nginx/meryclub.conf](nginx/meryclub.conf),
 `.dockerignore` / `server/.dockerignore`.
 
+## ⚠ This server also runs cPanel/WHM — read this before touching anything
+
+The VPS is not a plain box: it has cPanel/WHM installed alongside the
+manually-configured nginx/systemd/certbot stack this site actually runs on.
+That changes what's safe to assume. Before step 1 (inspection) is considered
+done, and definitely before cutover, confirm all three of these:
+
+1. **CSF (ConfigServer Security & Firewall).** cPanel's usual firewall
+   manages iptables itself, and Docker also manages iptables (NAT rules, the
+   `DOCKER`/`DOCKER-USER` chains) to publish container ports — the two are a
+   known source of conflicts. Check `/etc/csf/csf.conf` for a `DOCKER`
+   setting and run `csf -l` / `iptables -L -n` to see the current rules
+   *before* assuming `docker-compose.yml`'s `ports: ["80:80", "443:443"]`
+   will work, and re-check after a CSF/LFD restart — CSF has been known to
+   flush or fight over Docker's own chains unless explicitly configured for
+   Docker compatibility.
+2. **cPanel AutoSSL.** WHM → SSL/TLS Status can independently issue/renew
+   certificates for any domain WHM considers one of its accounts. If
+   meryclub.ir is registered there with AutoSSL enabled, it can race or
+   conflict with certbot managing the same domain's certificate. Check WHM
+   for this before relying on certbot as the sole cert source (see "HTTPS /
+   certbot" below) — either disable AutoSSL for this domain or use AutoSSL
+   instead of certbot, don't run both against the same domain.
+3. **Don't assume nginx alone owns ports 80/443.** Verify with `ss -tlnp`
+   (or `netstat -tlnp`) which process is actually bound to 80/443 right now.
+   On a cPanel box this could involve EasyApache/Apache or an nginx-reverse-
+   proxy plugin in front of it, and WHM can regenerate vhost configs on its
+   own schedule in ways that undo manual nginx edits — confirm the config
+   file you're reading is actually the one in effect.
+
+If any of these turn up a conflict, stop and report back before proceeding
+past inspection — the plan below (bind-mounting `/etc/letsencrypt`, binding
+Docker to 80/443, a webroot-based certbot renewal hook) assumes none of them
+are fighting Docker for the same resources.
+
 Secrets and data are deliberately **not** in either image:
 
 - `server/config.json` (adminUser, adminPassHash, sessionSecret) is
