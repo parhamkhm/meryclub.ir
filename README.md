@@ -47,11 +47,15 @@ Open **`assets/js/menu-data.js`**. Every item looks like this:
 { en: "Cappuccino", fa: "کاپوچینو", price: null, img: "cappuccino" }
 ```
 
-- **Price:** replace `null` with a plain number (e.g. `120000`). No commas, no
-  "تومان" — the site formats it. Leave `null` to keep showing "به‌زودی" (soon).
+- **Price:** replace `null` with a plain number in thousands of Toman, as on
+  the printed menu (e.g. `120` shows as ۱۲۰,۰۰۰ تومان). No commas, no
+  "تومان" — the site formats it. Two sizes: `[150, 170]`. Order-dependent:
+  `"variable"`. Leave `null` to keep showing "به‌زودی" (soon).
 - **Photo:** set `img` to a filename (no extension) that exists as both
-  `assets/img/menu/<name>.jpg` and `.webp`. Omit `img` entirely to fall back to
-  the category icon. `menu-photo-prompts.md` has ready-to-use prompts for every
+  `assets/img/menu/<name>.jpg` and `.webp` (640×640 square). Photos are cached
+  for 30 days, so a replacement photo needs a new filename — the existing ones
+  end in a short content hash (e.g. `iced-latte-1a2b3c`) for that reason. Omit
+  `img` entirely to fall back to the category icon. `menu-photo-prompts.md` has ready-to-use prompts for every
   item that still needs a photo.
 - **Signature items:** add `signature: true` to badge it "پیشنهاد مری".
 - **Hide an item** temporarily: add `hidden: true`.
