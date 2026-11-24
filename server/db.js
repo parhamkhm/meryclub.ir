@@ -75,6 +75,12 @@ db.exec(`
     review_ids TEXT NOT NULL,
     computed_at INTEGER NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS menu_price_overrides (
+    item_key TEXT PRIMARY KEY,
+    price_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 // Seed default loyalty settings on first run only — never overwrites a value

@@ -51,6 +51,13 @@
   .btn-ok{background:var(--ok);color:#fff;padding:.4rem .9rem;font-size:.8rem;}
   .btn-reject{background:transparent;border:1px solid var(--danger);color:var(--danger);padding:.4rem .9rem;font-size:.8rem;}
   .btn-delete{background:var(--danger);color:#fff;padding:.4rem .9rem;font-size:.8rem;}
+  select{width:100%;padding:.65rem .8rem;border:1px solid var(--border);border-radius:8px;font:inherit;background:#fff;}
+  .price-category{margin:1.5rem 0 .6rem;font-size:1rem;}
+  .price-row{display:grid;grid-template-columns:minmax(180px,1.6fr) minmax(130px,.9fr) minmax(120px,.7fr) minmax(120px,.7fr) auto auto;gap:.6rem;align-items:end;border-top:1px solid var(--border);padding:1rem 0;}
+  .price-row:first-of-type{border-top:0;}
+  .price-name{font-weight:600;}.price-name small{display:block;color:#7a7a7a;font-weight:400;margin-top:.2rem;}
+  .price-field label{font-size:.75rem;}.price-msg{grid-column:1/-1;margin:0;}
+  @media (max-width:720px){.price-row{grid-template-columns:1fr 1fr;}.price-name,.price-msg{grid-column:1/-1;}}
 </style>
 </head>
 <body>
@@ -85,6 +92,7 @@
     <div class="tabs">
       <button type="button" class="tab-btn active" data-tab="members">اعضا</button>
       <button type="button" class="tab-btn" data-tab="reviews">نظرات <span id="pendingCount"></span></button>
+      <button type="button" class="tab-btn" data-tab="prices">قیمت‌ها</button>
     </div>
 
     <div id="membersView">
@@ -137,9 +145,19 @@
       </section>
     </div>
 
+    <div id="pricesView" class="hidden">
+      <section class="card">
+        <h2 style="margin-top:0;">قیمت‌های منو</h2>
+        <p class="muted">مبلغ‌ها به هزار تومان هستند. ذخیره‌سازی قیمت، منوی سایت را بلافاصله به‌روز می‌کند.</p>
+        <div id="pricesList"></div>
+        <p id="pricesError" class="error hidden" role="alert"></p>
+      </section>
+    </div>
+
   </div>
 </main>
 
+<script src="/assets/js/menu-data.js?v=14"></script>
 <script src="app.js"></script>
 </body>
 </html>

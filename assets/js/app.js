@@ -48,6 +48,34 @@
     });
   }
 
+  function menuItemKey(categoryId, item) {
+    var slug = String(item.en || "").toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    return categoryId + ":" + slug;
+  }
+
+  function applyMenuPriceOverrides(overrides) {
+    var prices = {};
+    overrides.forEach(function (override) { prices[override.itemKey] = override.price; });
+    MERY_MENU.forEach(function (category) {
+      category.items.forEach(function (item) {
+        var key = menuItemKey(category.id, item);
+        if (Object.prototype.hasOwnProperty.call(prices, key)) item.price = prices[key];
+      });
+    });
+    renderMenu();
+  }
+
+  function loadMenuPriceOverrides() {
+    fetch("/api/menu-prices", { credentials: "same-origin" })
+      .then(function (response) { return response.json(); })
+      .then(function (data) {
+        if (data.ok && Array.isArray(data.overrides)) applyMenuPriceOverrides(data.overrides);
+      })
+      .catch(function () { /* The static menu remains available if the API is offline. */ });
+  }
+
   /* -- language ----------------------------------------------------------- */
 
   function applyLanguage(next) {
@@ -1341,6 +1369,7 @@
     safe(wireCommentsGrid);
     safe(wireMenuSearch);
     safe(function () { observeReveals(document); });
+    safe(loadMenuPriceOverrides);
   }
 
   if (document.readyState === "loading") {

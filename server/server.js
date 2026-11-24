@@ -53,6 +53,24 @@ function normalizePhone(raw) {
   return String(raw || "").trim().replace(/[\s-]/g, "");
 }
 
+function readMenuPriceOverrides() {
+  return db.prepare("SELECT item_key, price_json FROM menu_price_overrides").all().flatMap((row) => {
+    try {
+      return [{ itemKey: row.item_key, price: JSON.parse(row.price_json) }];
+    } catch (err) {
+      return [];
+    }
+  });
+}
+
+function normalizeMenuPrice(value) {
+  const isAmount = (amount) => Number.isInteger(amount) && amount >= 0 && amount <= 1000000;
+  if (value === null || value === "variable") return value;
+  if (isAmount(value)) return value;
+  if (Array.isArray(value) && value.length === 2 && value.every(isAmount)) return value;
+  return undefined;
+}
+
 // ---- public: join the club -------------------------------------------
 
 const joinLimiter = rateLimit({
@@ -119,6 +137,12 @@ app.post("/api/club/join", joinLimiter, (req, res) => {
     ok: true,
     reward: { description, expiresAt },
   });
+});
+
+// ---- public: menu price overrides ---------------------------------------
+
+app.get("/api/menu-prices", (req, res) => {
+  res.json({ ok: true, overrides: readMenuPriceOverrides() });
 });
 
 // ---- public: reviews & suggestions ------------------------------------
@@ -390,6 +414,39 @@ app.post("/api/admin/settings", requireAdmin, requireSameOrigin, (req, res) => {
 app.get("/api/admin/settings/audit", requireAdmin, (req, res) => {
   const rows = db.prepare("SELECT * FROM settings_audit ORDER BY id DESC LIMIT 100").all();
   res.json({ ok: true, audit: rows });
+});
+
+// ---- admin: menu prices --------------------------------------------------
+
+app.get("/api/admin/menu-prices", requireAdmin, (req, res) => {
+  res.json({ ok: true, overrides: readMenuPriceOverrides() });
+});
+
+app.post("/api/admin/menu-prices", requireAdmin, requireSameOrigin, (req, res) => {
+  const itemKey = String((req.body || {}).itemKey || "").trim();
+  const price = normalizeMenuPrice((req.body || {}).price);
+
+  if (!/^[a-z0-9][a-z0-9:-]{0,199}$/.test(itemKey)) {
+    return res.status(400).json({ ok: false, error: "آیتم منو نامعتبر است." });
+  }
+  if (price === undefined) {
+    return res.status(400).json({ ok: false, error: "قیمت باید یک عدد صحیح، دو قیمت یا وضعیت معتبر باشد." });
+  }
+
+  db.prepare(
+    `INSERT INTO menu_price_overrides (item_key, price_json, updated_at) VALUES (?, ?, datetime('now'))
+     ON CONFLICT(item_key) DO UPDATE SET price_json = excluded.price_json, updated_at = excluded.updated_at`
+  ).run(itemKey, JSON.stringify(price));
+  res.json({ ok: true });
+});
+
+app.delete("/api/admin/menu-prices/:itemKey", requireAdmin, requireSameOrigin, (req, res) => {
+  const itemKey = String(req.params.itemKey || "").trim();
+  if (!/^[a-z0-9][a-z0-9:-]{0,199}$/.test(itemKey)) {
+    return res.status(400).json({ ok: false, error: "آیتم منو نامعتبر است." });
+  }
+  db.prepare("DELETE FROM menu_price_overrides WHERE item_key = ?").run(itemKey);
+  res.json({ ok: true });
 });
 
 // ---- admin: reviews -------------------------------------------------------

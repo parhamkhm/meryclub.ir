@@ -17,9 +17,10 @@ The site is two parts that deploy separately:
    page listing every approved review. No build step needed to view it;
    Tailwind is pre-compiled into `assets/css/styles.css`.
 2. **A small backend** (`server/`) — powers the Customer Club (signup form,
-   password-protected admin panel, configurable loyalty settings) and the
-   Reviews & Suggestions feature (submission, moderation, shared reaction
-   counter). Node.js + Express + SQLite, no external database service required.
+   password-protected admin panel, configurable loyalty settings and menu-price
+   overrides) and the Reviews & Suggestions feature (submission, moderation,
+   shared reaction counter). Node.js + Express + SQLite, no external database
+   service required.
 
 ```
 index.html              the homepage (single page)
@@ -59,6 +60,14 @@ Open **`assets/js/menu-data.js`**. Every item looks like this:
   item that still needs a photo.
 - **Signature items:** add `signature: true` to badge it "پیشنهاد مری".
 - **Hide an item** temporarily: add `hidden: true`.
+
+### Changing prices from the admin panel
+
+Use the **قیمت‌ها** tab in `/club-admin/` to change a price without editing or
+deploying `menu-data.js`. It supports a single price, two sizes, "coming soon",
+and "order-dependent" pricing. Values are entered in thousands of Toman. The
+override is stored in SQLite and the public menu applies it on its next load.
+Use **بازگردانی** to return an item to the default value in `menu-data.js`.
 
 ## Updating text / translations
 
